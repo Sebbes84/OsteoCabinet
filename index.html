@@ -1,0 +1,1130 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OstéoCabinet — Gestion de Cabinet Ostéopathique</title>
+    <meta name="description"
+        content="Logiciel de gestion de cabinet ostéopathique : patients, séances, planning et facturation.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-area">
+                <div class="logo-icon">⚕</div>
+                <div class="logo-text">
+                    <span class="logo-title">OstéoCabinet</span>
+                    <span class="logo-sub">Gestion de cabinet</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a class="nav-item active" data-page="dashboard" href="#" onclick="showPage('dashboard'); return false;">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Tableau de bord</span>
+            </a>
+            <a class="nav-item" data-page="patients" href="#" onclick="showPage('patients'); return false;">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Patients</span>
+            </a>
+            <a class="nav-item" data-page="planning" href="#" onclick="showPage('planning'); return false;">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Planning</span>
+            </a>
+            <a class="nav-item" data-page="seances" href="#" onclick="showPage('seances'); return false;">
+                <span class="nav-icon">🩺</span>
+                <span class="nav-label">Séances</span>
+            </a>
+            <a class="nav-item" data-page="facturation" href="#" onclick="showPage('facturation'); return false;">
+                <span class="nav-icon">🧾</span>
+                <span class="nav-label">Facturation</span>
+            </a>
+
+            <!-- Séparateur — pousse Paramétrage vers le bas -->
+            <div class="nav-spacer"></div>
+            <div class="nav-separator">
+                <span>Paramétrage</span>
+            </div>
+
+            <a class="nav-item" data-page="parametres" href="#" onclick="showPage('parametres'); return false;">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Paramètres</span>
+            </a>
+            <a class="nav-item" data-page="template" href="#"
+                onclick="showPage('template'); initTemplateEditor(); return false;">
+                <span class="nav-icon">🎨</span>
+                <span class="nav-label">Template Facture</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()"
+                title="Basculer mode clair / sombre">
+                <span class="theme-toggle-icon" id="themeToggleIcon">🌙</span>
+                <span class="theme-toggle-label" id="themeToggleLabel">Mode sombre</span>
+            </button>
+            <div class="cabinet-info" id="sidebarCabinetName">Cabinet Ostéopathique</div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <h1 class="page-title" id="pageTitle">Tableau de bord</h1>
+            </div>
+            <div class="topbar-right">
+                <div class="current-datetime" id="currentDatetime"></div>
+            </div>
+        </div>
+
+        <!-- Zone d'alertes globales (Sauvegarde, etc.) -->
+        <div id="globalAlertArea"></div>
+
+        <!-- PAGES -->
+        <div class="page-content">
+
+            <!-- ===================== DASHBOARD ===================== -->
+            <div id="page-dashboard" class="page active">
+                <div class="dashboard-toolbar">
+                    <div class="toolbar-label">Période d'analyse :</div>
+                    <select id="dashPeriodPreset" class="form-control form-control-sm"
+                        style="width: auto; min-width: 180px;" onchange="setDashboardPeriod(this.value)">
+                        <option value="month" id="optPeriodMonth">Mois en cours</option>
+                        <option value="quarter" id="optPeriodQuarter">Trimestre en cours</option>
+                        <option value="semester" id="optPeriodSemester">Semestre en cours</option>
+                        <option value="year" id="optPeriodYear">Année en cours</option>
+                        <option value="custom">Période personnalisée</option>
+                    </select>
+                    <div class="toolbar-custom">
+                        <input type="date" id="dashDateStart" class="form-control form-control-sm"
+                            onchange="onDashboardDateManualChange()">
+                        <span class="toolbar-sep">au</span>
+                        <input type="date" id="dashDateEnd" class="form-control form-control-sm"
+                            onchange="onDashboardDateManualChange()">
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card accent-blue">
+                        <div class="stat-icon">👤</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statPatients">0</div>
+                            <div class="stat-label">Total Patients</div>
+                        </div>
+                    </div>
+                    <div class="stat-card accent-green">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statSeancesAujourdhui">0</div>
+                            <div class="stat-label">Séances aujourd'hui</div>
+                        </div>
+                    </div>
+                    <div class="stat-card accent-purple">
+                        <div class="stat-icon">🩺</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statSeancesMois">0</div>
+                            <div class="stat-label" id="labelSeancesPeriod">Séances sur la période</div>
+                        </div>
+                    </div>
+                    <div class="stat-card accent-amber">
+                        <div class="stat-icon">💶</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statCAMois">0 €</div>
+                            <div class="stat-label" id="labelCAPeriod">CA sur la période</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Prochaines séances</h2>
+                            <button class="btn btn-sm btn-primary" onclick="showPage('planning')">Voir planning
+                                →</button>
+                        </div>
+                        <div id="dashSeancesProchaines" class="empty-state">Aucune séance à venir</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Factures récentes</h2>
+                            <button class="btn btn-sm btn-primary" onclick="showPage('facturation')">Voir toutes
+                                →</button>
+                        </div>
+                        <div id="dashFacturesRecentes" class="empty-state">Aucune facture récente</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================== PATIENTS ===================== -->
+            <div id="page-patients" class="page">
+                <div class="toolbar">
+                    <div class="search-bar">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchPatient" placeholder="Rechercher par nom, prénom, téléphone…"
+                            oninput="filterPatients()" class="search-input">
+                    </div>
+                    <span id="patientSearchCount" class="search-count" style="display:none"></span>
+                    <button class="btn btn-primary" onclick="openPatientModal()">+ Nouveau patient</button>
+                </div>
+                <div class="patients-layout">
+                    <div class="card patients-card" id="patientsListContainer">
+                        <table class="data-table" id="patientsTable">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Prénom</th>
+                                    <th>Date de naissance</th>
+                                    <th>Téléphone</th>
+                                    <th>Email</th>
+                                    <th>Dernière séance</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patientsTableBody">
+                                <tr>
+                                    <td colspan="7" class="empty-state">Aucun patient enregistré</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alphabet-index" id="alphabetIndex">
+                        <!-- Généré en JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================== PLANNING ===================== -->
+            <div id="page-planning" class="page">
+                <div class="toolbar">
+                    <div class="planning-view-btns">
+                        <button class="btn btn-sm view-btn" id="viewDayBtn"
+                            onclick="setPlanningView('day')">Jour</button>
+                        <button class="btn btn-sm view-btn active" id="viewWeekBtn"
+                            onclick="setPlanningView('week')">Semaine</button>
+                        <button class="btn btn-sm view-btn" id="viewMonthBtn"
+                            onclick="setPlanningView('month')">Mois</button>
+                    </div>
+                    <div class="planning-nav">
+                        <button class="btn btn-icon" onclick="planningNav(-1)">◀</button>
+                        <button class="btn btn-outline" onclick="planningGoToday()">Aujourd'hui</button>
+                        <button class="btn btn-icon" onclick="planningNav(1)">▶</button>
+                        <span class="planning-period" id="planningPeriod"></span>
+                    </div>
+                    <button class="btn btn-primary" onclick="openSeanceModal()">+ Nouvelle séance</button>
+                </div>
+                <div class="card planning-card">
+                    <div id="planningContainer"></div>
+                </div>
+            </div>
+
+            <!-- ===================== SEANCES ===================== -->
+            <div id="page-seances" class="page">
+                <div class="toolbar">
+                    <div class="search-bar">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchSeance" placeholder="Rechercher une séance…"
+                            oninput="filterSeances()" class="search-input">
+                    </div>
+                    <div class="filter-group">
+                        <select id="filterSeanceStatus" onchange="filterSeances()" class="select-input">
+                            <option value="">Tous les statuts</option>
+                            <option value="planifiee">Planifiée</option>
+                            <option value="realisee">Réalisée</option>
+                            <option value="annulee">Annulée</option>
+                        </select>
+                        <select id="filterSeancePatient" onchange="filterSeances()" class="select-input">
+                            <option value="">Tous les patients</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="openSeanceModal()">+ Nouvelle séance</button>
+                </div>
+                <div id="seancesListContainer" class="card scrollable-table-card">
+                    <table class="data-table" id="seancesTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Heure</th>
+                                <th>Patient</th>
+                                <th>Type</th>
+                                <th>Durée</th>
+                                <th>Statut</th>
+                                <th>Montant</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="seancesTableBody">
+                            <tr>
+                                <td colspan="8" class="empty-state">Aucune séance enregistrée</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===================== FACTURATION ===================== -->
+            <div id="page-facturation" class="page">
+                <div class="toolbar">
+                    <div class="search-bar">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchFacture" placeholder="Rechercher une facture…"
+                            oninput="filterFactures()" class="search-input">
+                    </div>
+                    <div class="filter-group">
+                        <select id="filterFactureStatus" onchange="filterFactures()" class="select-input">
+                            <option value="">Tous les statuts</option>
+                            <option value="emise">Émise</option>
+                            <option value="payee">Acquittée</option>
+                            <option value="annulee">Annulée</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="openFactureModal()">+ Nouvelle facture</button>
+                </div>
+                <div class="card scrollable-table-card">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>N° Facture</th>
+                                <th>Date</th>
+                                <th>Patient</th>
+                                <th>Séance(s)</th>
+                                <th>Montant</th>
+                                <th>Paiement</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="facturesTableBody">
+                            <tr>
+                                <td colspan="8" class="empty-state">Aucune facture enregistrée</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===================== PARAMÈTRES ===================== -->
+            <div id="page-parametres" class="page">
+                <div class="settings-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Informations du cabinet</h2>
+                        </div>
+                        <div class="form-group">
+                            <label>Nom du cabinet</label>
+                            <input type="text" id="settingCabinetName" class="form-control"
+                                placeholder="Cabinet d'Ostéopathie">
+                        </div>
+                        <div class="form-group">
+                            <label>Ostéopathe (praticien)</label>
+                            <input type="text" id="settingOsteoName" class="form-control" placeholder="Prénom Nom">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>N° ADELI</label>
+                                <input type="text" id="settingAdeli" class="form-control" placeholder="00 00 00 000 00">
+                            </div>
+                            <div class="form-group">
+                                <label>N° SIRET</label>
+                                <input type="text" id="settingSiret" class="form-control"
+                                    placeholder="000 000 000 00000">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Adresse</label>
+                            <textarea id="settingAddress" class="form-control" rows="3"
+                                placeholder="12 rue de la Santé&#10;75001 Paris"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Téléphone</label>
+                                <input type="text" id="settingPhone" class="form-control" placeholder="06 00 00 00 00">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="settingEmail" class="form-control"
+                                    placeholder="contact@cabinet.fr">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Site web</label>
+                            <input type="text" id="settingWebsite" class="form-control"
+                                placeholder="www.cabinet-osteo.fr">
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Logo & Signature</h2>
+                        </div>
+                        <div class="form-group">
+                            <label>Logo du cabinet</label>
+                            <div class="upload-zone" id="logoUploadZone"
+                                onclick="document.getElementById('logoInput').click()">
+                                <img id="logoPreview" src="" alt=""
+                                    style="display:none; max-height:80px; max-width:200px;">
+                                <div id="logoPlaceholder">
+                                    <div class="upload-icon">🖼</div>
+                                    <div>Cliquer pour choisir un logo</div>
+                                    <div class="upload-hint">PNG, JPG — recommandé 300×150px</div>
+                                </div>
+                                <input type="file" id="logoInput" accept="image/*" style="display:none"
+                                    onchange="handleLogoUpload(event)">
+                            </div>
+                            <button class="btn btn-sm btn-danger mt-8" onclick="removeLogo()" id="removeLogoBtn"
+                                style="display:none">Supprimer le logo</button>
+                        </div>
+                        <div class="form-group">
+                            <label>Signature (pour les factures)</label>
+                            <div class="upload-zone" id="signatureUploadZone"
+                                onclick="document.getElementById('signatureInput').click()">
+                                <img id="signaturePreview" src="" alt=""
+                                    style="display:none; max-height:80px; max-width:200px;">
+                                <div id="signaturePlaceholder">
+                                    <div class="upload-icon">✍️</div>
+                                    <div>Cliquer pour choisir une signature</div>
+                                    <div class="upload-hint">PNG transparent recommandé</div>
+                                </div>
+                                <input type="file" id="signatureInput" accept="image/*" style="display:none"
+                                    onchange="handleSignatureUpload(event)">
+                            </div>
+                            <button class="btn btn-sm btn-danger mt-8" onclick="removeSignature()"
+                                id="removeSignatureBtn" style="display:none">Supprimer la signature</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Facturation</h2>
+                        </div>
+                        <div class="form-group">
+                            <label>Format numéro de facture</label>
+                            <input type="text" id="settingFactureFormat" class="form-control"
+                                placeholder="FACT-YYYY-######">
+                            <small class="text-muted">YYYY = 2026, YY = 26, # = compteur (ex: FACT-YY-#### ->
+                                FACT-26-0001)</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Moyens de paiement acceptés</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label"><input type="checkbox" id="payEspeces" value="Espèces">
+                                    Espèces</label>
+                                <label class="checkbox-label"><input type="checkbox" id="payCheque" value="Chèque">
+                                    Chèque</label>
+                                <label class="checkbox-label"><input type="checkbox" id="payVirement" value="Virement">
+                                    Virement bancaire</label>
+                                <label class="checkbox-label"><input type="checkbox" id="payCarte"
+                                        value="Carte bancaire"> Carte bancaire</label>
+                                <label class="checkbox-label"><input type="checkbox" id="payPaypal" value="PayPal">
+                                    PayPal</label>
+                                <label class="checkbox-label"><input type="checkbox" id="payVitalaire"
+                                        value="Vitalaire"> Vitalaire</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Mention légale facture</label>
+                            <textarea id="settingMentionLegale" class="form-control" rows="2"
+                                placeholder="Exonéré de TVA - Article 261-4-1° du CGI"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Libellé Facture "Émise"</label>
+                                <input type="text" id="settingLabelEmise" class="form-control"
+                                    placeholder="En attente de règlement">
+                            </div>
+                            <div class="form-group">
+                                <label>Libellé Facture "Acquittée"</label>
+                                <input type="text" id="settingLabelPayee" class="form-control"
+                                    placeholder="Facture réglée">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Types de séances</h2>
+                        </div>
+                        <div id="typeSeancesList" class="type-seances-list"></div>
+
+                        <div class="type-seance-form-container mt-16">
+                            <h3 class="settings-sub-title" id="typeSeanceFormTitle">Ajouter un type de séance</h3>
+                            <input type="hidden" id="editTypeIndex" value="-1">
+                            <div class="type-seance-form-grid">
+                                <div class="form-group mb-0">
+                                    <label class="label-sm">Nom du type</label>
+                                    <input type="text" id="newTypeNom" class="form-control"
+                                        placeholder="ex: Bilan Ostéopathique">
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label class="label-sm">Durée (min)</label>
+                                    <input type="number" id="newTypeDuree" class="form-control" min="0" step="5">
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label class="label-sm">Tarif (€)</label>
+                                    <input type="number" id="newTypeTarif" class="form-control" min="0" step="0.5">
+                                </div>
+                                <div class="type-seance-form-actions">
+                                    <button class="btn btn-primary w-100" id="btnSaveTypeSeance"
+                                        onclick="addTypeSeance()">
+                                        <span class="btn-icon">➕</span> <span id="btnSaveTypeText">Ajouter</span>
+                                    </button>
+                                    <button class="btn btn-secondary w-100" id="btnCancelTypeEdit"
+                                        onclick="cancelTypeEdit()" style="display:none">
+                                        Annuler
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🛡️ Sauvegarde et Sécurité</h2>
+                        </div>
+                        <div class="form-group">
+                            <label>Dossier de sauvegarde</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="settingBackupPath" class="form-control" readonly
+                                    placeholder="Par défaut (sous-dossier /backups)">
+                                <button class="btn btn-outline" onclick="browseBackupFolder()"
+                                    title="Choisir un dossier">📂</button>
+                                <button class="btn btn-secondary" onclick="resetBackupFolder()"
+                                    title="Réinitialiser">↺</button>
+                            </div>
+                            <small class="text-muted">Emplacement où seront stockés les fichiers .db de
+                                sécurité.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Rappel de sauvegarde</label>
+                            <select id="settingBackupFrequency" class="form-control">
+                                <option value="none">Aucun rappel</option>
+                                <option value="daily">Quotidien</option>
+                                <option value="weekly">Hebdomadaire</option>
+                                <option value="monthly">Mensuel</option>
+                            </select>
+                            <small class="text-muted">Un rappel s'affichera au démarrage si la dernière sauvegarde est
+                                trop ancienne.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Dernière sauvegarde : <span id="lastBackupDisplay"
+                                    style="font-weight:600">Jamais</span></label>
+                            <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                                <button class="btn btn-outline w-100" onclick="triggerManualBackup()">
+                                    <span class="btn-icon">🛡️</span> Effectuer une sauvegarde maintenant
+                                </button>
+                                <button class="btn btn-secondary w-100"
+                                    onclick="document.getElementById('importBackupInput').click()">
+                                    <span class="btn-icon">📥</span> Importer une sauvegarde (.db)
+                                </button>
+                                <input type="file" id="importBackupInput" style="display:none" accept=".db"
+                                    onchange="importBackup(this)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🚀 Mise à jour du logiciel</h2>
+                        </div>
+                        <div class="form-group">
+                            <label>Version actuelle : <span id="currentVersionDisplay"
+                                    style="font-weight:600">...</span></label>
+                            <div style="margin-top: 10px;">
+                                <button class="btn btn-outline w-100" id="btnCheckUpdate" onclick="checkUpdate()">
+                                    <span class="btn-icon">🔄</span> Vérifier les mises à jour
+                                </button>
+                            </div>
+                        </div>
+                        <div id="updateAvailableArea"
+                            style="display:none; margin-top:15px; padding:12px; background:rgba(79, 114, 196, 0.1); border:1px solid var(--primary); border-radius:8px;">
+                            <div style="font-weight:600; color:var(--primary-light); margin-bottom:8px;">✨ Nouvelle
+                                version disponible !</div>
+                            <div id="updateVersionInfo" style="font-size:13px; margin-bottom:12px;"></div>
+                            <button class="btn btn-primary w-100" id="btnApplyUpdate" onclick="applyUpdate()">
+                                🚀 Installer la mise à jour
+                            </button>
+                        </div>
+                        <div style="margin-top: 15px; text-align: center;">
+                            <small class="text-muted">Source : <a href="https://github.com/Sebbes84/OsteoCabinet"
+                                    target="_blank"
+                                    style="color:var(--primary-light); text-decoration:none;">Sebbes84/OsteoCabinet</a></small>
+                        </div>
+                    </div>
+
+                    <div class="card" style="grid-column: 1 / -1;">
+                        <div class="card-header">
+                            <h2 class="card-title">📧 Email — Paramètres par défaut</h2>
+                        </div>
+                        <div class="settings-email-grid">
+                            <div>
+                                <div class="form-group">
+                                    <label>Client mail utilisé</label>
+                                    <div
+                                        style="display:flex; align-items:center; gap:10px; padding: 10px 14px; background:var(--bg-card2); border-radius:8px; border:1px solid var(--border);">
+                                        <span style="font-size:20px;">✉️</span>
+                                        <strong>Gmail</strong>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Objet par défaut</label>
+                                    <input type="text" id="settingEmailSubject" class="form-control"
+                                        placeholder="Votre facture — Cabinet d'Ostéopathie">
+                                </div>
+                            </div>
+                            <div>
+                                <div class="form-group" style="height:100%;">
+                                    <label>Corps du message par défaut</label>
+                                    <div class="form-hint"
+                                        style="margin-bottom:6px; font-size:12px; color:var(--text-muted);">Variables :
+                                        <code>{nom_patient}</code>, <code>{prenom_patient}</code>,
+                                        <code>{numero_facture}</code>, <code>{montant}</code>,
+                                        <code>{date_facture}</code>, <code>{nom_cabinet}</code>,
+                                        <code>{nom_osteo}</code>
+                                    </div>
+                                    <textarea id="settingEmailBody" class="form-control" rows="7" placeholder="Bonjour {prenom_patient} {nom_patient},
+
+Veuillez trouver ci-joint la facture n° {numero_facture} d'un montant de {montant} € datée du {date_facture}.
+
+Cordialement,
+{nom_osteo}
+{nom_cabinet}"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="save-bar">
+                    <button class="btn btn-primary btn-lg" onclick="saveSettings()">💾 Enregistrer les
+                        paramètres</button>
+                </div>
+            </div>
+
+            <!-- ===================== TEMPLATE FACTURE ===================== -->
+            <div id="page-template" class="page">
+                <div class="te-page-header" style="padding:20px 28px 0;">
+                    <div>
+                        <h2 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">🎨 Éditeur de
+                            Template Facture</h2>
+                        <p style="font-size:12px;color:var(--text-muted);">Glissez les champs sur la feuille · Cliquez
+                            pour modifier les propriétés · Les factures utiliseront ce layout</p>
+                    </div>
+                    <div class="te-page-actions">
+                        <button class="btn btn-outline btn-sm" onclick="resetTemplateDefault()">↺ Réinitialiser</button>
+                        <button class="btn btn-outline btn-sm" onclick="exportTemplateJSON()">⬇ Exporter JSON</button>
+                        <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+                            ⬆ Importer JSON
+                            <input type="file" accept=".json" style="display:none" onchange="importTemplateJSON(event)">
+                        </label>
+                        <button class="btn btn-primary btn-sm" onclick="saveTemplateAndNotify()">💾
+                            Sauvegarder</button>
+                    </div>
+                </div>
+
+                <div class="te-layout">
+                    <!-- PALETTE (gauche) -->
+                    <div class="te-palette">
+                        <div class="te-palette-header">📦 Champs disponibles</div>
+                        <div id="tePalette">Chargement…</div>
+                    </div>
+
+                    <!-- ZONE CENTRALE -->
+                    <div class="te-center">
+                        <!-- Toolbar -->
+                        <div class="te-toolbar">
+                            <div class="te-toolbar-group">
+                                <button class="te-tool-btn" onclick="teZoomOut()" title="Zoom arrière">−</button>
+                                <span class="te-zoom-label" id="teZoomLabel">100%</span>
+                                <button class="te-tool-btn" onclick="teZoomIn()" title="Zoom avant">+</button>
+                                <button class="te-tool-btn" onclick="teZoomReset()" title="100%">⊙</button>
+                            </div>
+                            <div class="te-toolbar-group">
+                                <button class="te-tool-btn active" id="teSnapBtn" onclick="toggleSnap()"
+                                    title="Magnétisme">⊞ Grille</button>
+                            </div>
+                            <div class="te-template-options">
+                                <label title="Couleur accent">
+                                    Accent
+                                    <input type="color" value="#2c4a8c" title="Couleur accentuation"
+                                        onchange="updateTemplateAccentColor(this.value)" id="teAccentColor">
+                                </label>
+                                <label title="Fond de page">
+                                    Fond
+                                    <input type="color" value="#ffffff" title="Couleur du fond"
+                                        onchange="updateTemplateBg(this.value)" id="teBgColor">
+                                </label>
+                                <label>Police :
+                                    <select onchange="updateTemplateFontFamily(this.value)" id="teFontFamily">
+                                        <option value="Inter, sans-serif">Inter</option>
+                                        <option value="Playfair Display, serif">Playfair</option>
+                                        <option value="Georgia, serif">Georgia</option>
+                                        <option value="Arial, sans-serif">Arial</option>
+                                        <option value="Courier New, monospace">Courier</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Canvas scroll -->
+                        <div class="te-canvas-scroll">
+                            <div id="teCanvasWrapper">
+                                <div id="teCanvas" style="width:635px;height:897px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PROPRIÉTÉS (droite) -->
+                    <div class="te-properties">
+                        <div class="te-properties-header">⚡ Propriétés</div>
+                        <div id="tePropertiesPanel">
+                            <div class="te-props-empty">
+                                <div class="te-props-empty-icon">🖱</div>
+                                <p>Cliquez sur un champ<br>pour modifier ses propriétés</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- end page-content -->
+    </main>
+
+    <!-- ===================== MODALS ===================== -->
+
+    <!-- Modal Patient -->
+    <div class="modal-overlay" id="modalPatient">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modalPatientTitle">Nouveau patient</h2>
+                    <div id="patientSummaryBar" class="patient-summary-bar"></div>
+                </div>
+                <button class="modal-close" onclick="closeModal('modalPatient')">✕</button>
+            </div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('tabInfos', this)">Informations</button>
+                <button class="tab-btn" onclick="switchTab('tabAntecedents', this)">Antécédents</button>
+                <button class="tab-btn" onclick="switchTab('tabSeancesPatient', this)">Historique séances</button>
+            </div>
+            <div class="modal-body">
+                <div id="tabInfos" class="tab-content active">
+                    <input type="hidden" id="patientId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nom *</label>
+                            <input type="text" id="patientNom" class="form-control" placeholder="DUPONT">
+                        </div>
+                        <div class="form-group">
+                            <label>Prénom *</label>
+                            <input type="text" id="patientPrenom" class="form-control" placeholder="Marie">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Date de naissance</label>
+                            <input type="date" id="patientDateNaissance" class="form-control"
+                                onchange="updatePatientNssPrefix()">
+                        </div>
+                        <div class="form-group">
+                            <label>Sexe</label>
+                            <select id="patientSexe" class="form-control" onchange="updatePatientNssPrefix()">
+                                <option value="">Non précisé</option>
+                                <option value="F">Féminin</option>
+                                <option value="M">Masculin</option>
+                                <option value="A">Autre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>N° Sécurité sociale</label>
+                            <input type="text" id="patientNss" class="form-control" placeholder="1 85 04 75 123 456 78"
+                                maxlength="21" oninput="onNssInput(this)">
+                        </div>
+                        <div class="form-group">
+                            <label>Latéralité</label>
+                            <select id="patientLateralite" class="form-control">
+                                <option value="">Non précisé</option>
+                                <option value="droitier">Droitier</option>
+                                <option value="gaucher">Gaucher</option>
+                                <option value="ambidextre">Ambidextre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Adresse</label>
+                        <input type="text" id="patientAdresse" class="form-control" placeholder="12 rue de la Paix">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:0 0 120px;">
+                            <label>Code postal</label>
+                            <input type="text" id="patientCodePostal" class="form-control" placeholder="75001"
+                                maxlength="10">
+                        </div>
+                        <div class="form-group">
+                            <label>Ville</label>
+                            <input type="text" id="patientVille" class="form-control" placeholder="Paris">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Téléphone</label>
+                            <input type="tel" id="patientTelephone" class="form-control" placeholder="06 00 00 00 00">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="patientEmail" class="form-control" placeholder="email@exemple.fr">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Médecin traitant</label>
+                            <input type="text" id="patientMedecin" class="form-control" placeholder="Dr Martin">
+                        </div>
+                        <div class="form-group">
+                            <label>Profession</label>
+                            <input type="text" id="patientProfession" class="form-control"
+                                placeholder="Infirmier, Enseignant…">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mutuelle / Assurance</label>
+                        <input type="text" id="patientMutuelle" class="form-control" placeholder="MGEN, MAAF…">
+                    </div>
+                    <div class="form-group">
+                        <label>Comment a-t-il connu le cabinet ?</label>
+                        <input type="text" id="patientOrientation" class="form-control"
+                            placeholder="Bouche à oreille, internet…">
+                    </div>
+                    <div class="form-group">
+                        <label>Notes générales</label>
+                        <textarea id="patientNotes" class="form-control" rows="3"
+                            placeholder="Informations complémentaires…"></textarea>
+                    </div>
+                </div>
+                <div id="tabAntecedents" class="tab-content">
+                    <div class="form-group">
+                        <label>🚩 Note importante (Alerte)</label>
+                        <textarea id="patientNoteImportante" class="form-control" rows="2"
+                            placeholder="Allergies graves, pathologies spécifiques, précautions…"
+                            oninput="toggleNoteImportanteStyle(this)"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Motif de consultation principal</label>
+                        <textarea id="patientMotif" class="form-control" rows="3"
+                            placeholder="Lombalgie chronique, cervicalgies…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Antécédents médicaux</label>
+                        <textarea id="patientAntecedentsMedicaux" class="form-control" rows="4"
+                            placeholder="Chirurgies, maladies chroniques, traitements en cours…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Antécédents traumatiques</label>
+                        <textarea id="patientAntecedentsTrauma" class="form-control" rows="3"
+                            placeholder="Accidents, chutes, fractures…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Allergies</label>
+                        <input type="text" id="patientAllergies" class="form-control"
+                            placeholder="Aucune / Pénicilline…">
+                    </div>
+                    <div class="form-group">
+                        <label>Traitements médicamenteux en cours</label>
+                        <textarea id="patientTraitements" class="form-control" rows="3"
+                            placeholder="Nom du médicament, posologie…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Contre-indications</label>
+                        <textarea id="patientContraIndications" class="form-control" rows="2"
+                            placeholder="…"></textarea>
+                    </div>
+                </div>
+                <div id="tabSeancesPatient" class="tab-content">
+                    <div id="patientSeancesHistory" class="empty-state">Enregistrez d'abord le patient pour voir son
+                        historique.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-left">
+                    <button class="btn btn-success" id="btnNouvelleSeancePatient" onclick="
+                        const pid = document.getElementById('patientId').value;
+                        if (!pid) { showToast('Enregistrez d\'abord le patient.', 'error'); return; }
+                        openSeanceModal(null, pid);
+                    ">🩺 Nouvelle séance</button>
+                </div>
+                <div class="modal-footer-right">
+                    <button class="btn btn-secondary" onclick="closeModal('modalPatient')">Annuler</button>
+                    <button class="btn btn-primary" onclick="savePatient()">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Séance -->
+    <div class="modal-overlay" id="modalSeance">
+        <div class="modal modal-medium">
+            <div class="modal-header">
+                <h2 id="modalSeanceTitle">Nouvelle séance</h2>
+                <button class="modal-close" onclick="closeModal('modalSeance')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="seanceId">
+                <div class="form-group session-status-container">
+                    <label>Statut de la séance</label>
+                    <div class="status-btn-group">
+                        <input type="hidden" id="seanceStatut" value="planifiee">
+                        <button type="button" class="status-btn" data-status="planifiee"
+                            onclick="setSeanceStatus('planifiee')">📅 Planifiée</button>
+                        <button type="button" class="status-btn" data-status="realisee"
+                            onclick="setSeanceStatus('realisee')">✅ Réalisée</button>
+                        <button type="button" class="status-btn" data-status="annulee"
+                            onclick="setSeanceStatus('annulee')">❌ Annulée</button>
+                    </div>
+                </div>
+
+                <div id="seanceNoteImportanteContainer" style="display:none; margin-bottom: 20px;">
+                    <div id="seanceNoteImportanteText" class="note-importante-filled"
+                        style="padding: 12px; border-radius: var(--radius-sm); font-size: 13.5px; border: 1px solid var(--danger); line-height: 1.5;">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Patient *</label>
+                    <div id="acSeancePatient" class="patient-ac-container"></div>
+                    <input type="hidden" id="seancePatient">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date *</label>
+                        <input type="date" id="seanceDate" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Heure *</label>
+                        <input type="time" id="seanceHeure" class="form-control" step="900">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Type de séance</label>
+                    <select id="seanceType" class="form-control" onchange="updateSeanceMontant()">
+                    </select>
+                </div>
+
+                <!-- Durée et Montant sont gérés automatiquement via le type de séance -->
+                <input type="hidden" id="seanceDuree">
+                <input type="hidden" id="seanceMontant">
+                <div class="form-group">
+                    <label>Anamnèse / Motif</label>
+                    <textarea id="seanceAnamnese" class="form-control" rows="3"
+                        placeholder="Motif de consultation, douleur, symptômes…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Bilan & gestes réalisés</label>
+                    <textarea id="seanceBilan" class="form-control" rows="4"
+                        placeholder="Zones traitées, techniques utilisées…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Conseils donnés au patient</label>
+                    <textarea id="seanceConseils" class="form-control" rows="2"
+                        placeholder="Exercices, hydratation, repos…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Prochaine séance recommandée</label>
+                    <input type="text" id="seanceProchaine" class="form-control" placeholder="Dans 3-4 semaines…">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-left">
+                    <button class="btn btn-outline" id="btnFichePatientSeance" onclick="openPatientFromSeance()"
+                        style="display:none" title="Ouvrir la fiche patient">👤 Fiche patient</button>
+                    <button class="btn btn-danger" id="btnDeleteSeanceModal" onclick="deleteSeanceFromModal()"
+                        style="display:none" title="Supprimer la séance">🗑 Supprimer</button>
+                    <button class="btn btn-warning" id="btnFactureSeanceModal" onclick="facturerSeanceFromModal()"
+                        style="display:none" title="Éditer la facture">🧾 Éditer la facture</button>
+                </div>
+                <div class="modal-footer-right">
+                    <button class="btn btn-secondary" onclick="closeModal('modalSeance')">Annuler</button>
+                    <button class="btn btn-primary" onclick="saveSeance()">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Facture -->
+    <div class="modal-overlay" id="modalFacture">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h2 id="modalFactureTitle">Nouvelle facture</h2>
+                <button class="modal-close" onclick="closeModal('modalFacture')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="factureId">
+                <div class="form-group facture-status-container">
+                    <label>Statut de la facture</label>
+                    <div class="status-btn-group" id="factureStatusBtnGroup">
+                        <input type="hidden" id="factureStatut" value="emise">
+                        <button type="button" class="status-btn" data-status="emise"
+                            onclick="setFactureStatus('emise')">📄 Émise</button>
+                        <button type="button" class="status-btn" data-status="payee"
+                            onclick="setFactureStatus('payee')">✅ Acquittée</button>
+                        <button type="button" class="status-btn" data-status="annulee"
+                            onclick="setFactureStatus('annulee')">❌ Annulée</button>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>N° Facture</label>
+                        <input type="text" id="factureNumero" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="factureDate" class="form-control" onchange="refreshFactureNum()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Patient *</label>
+                    <div id="acFacturePatient" class="patient-ac-container"></div>
+                    <input type="hidden" id="facturePatient">
+                </div>
+                <div class="form-group">
+                    <label>Séance(s) à facturer</label>
+                    <div id="factureSeancesSelect" class="seances-checkbox-list">
+                        <div class="empty-state-sm">Sélectionnez un patient d'abord</div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Montant total</label>
+                        <input type="text" id="factureMontant" class="form-control" placeholder="0,00 €">
+                    </div>
+                    <div class="form-group">
+                        <label>Moyen de paiement</label>
+                        <select id="facturePaiement" class="form-control">
+                            <option value="Espèces">Espèces</option>
+                            <option value="Chèque">Chèque</option>
+                            <option value="Virement">Virement bancaire</option>
+                            <option value="Carte bancaire">Carte bancaire</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes (optionnel)</label>
+                    <textarea id="factureNotes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-right">
+                    <button class="btn btn-secondary" onclick="closeModal('modalFacture')">Annuler</button>
+                    <button class="btn btn-primary" onclick="saveFacture()">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Aperçu Facture -->
+    <div class="modal-overlay" id="modalFacturePreview">
+        <div class="modal modal-xl">
+            <div class="modal-header">
+                <h2>Aperçu de la facture</h2>
+                <button class="modal-close" onclick="closeModal('modalFacturePreview')">✕</button>
+            </div>
+            <div class="modal-body" style="background:#f5f5f5; padding: 16px; overflow:auto;">
+                <div id="facturePreviewContent" style="display:flex;justify-content:center;"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-right">
+                    <button class="btn btn-secondary" onclick="closeModal('modalFacturePreview')">Fermer</button>
+                    <button class="btn btn-outline" onclick="openEmailModal()" id="btnEnvoyerMail"
+                        title="Envoyer par Gmail">📧 Envoyer par Gmail</button>
+                    <button class="btn btn-primary" onclick="printFactureWithTemplate()">🖨 Imprimer / PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Envoi Email Facture -->
+    <div class="modal-overlay" id="modalEmailFacture">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>📧 Envoyer la facture par Gmail</h2>
+                <button class="modal-close" onclick="closeModal('modalEmailFacture')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="email-client-badge">
+                    <span class="email-client-icon">✉️</span>
+                    <span>Client mail : <strong>Gmail</strong></span>
+                </div>
+                <div class="form-group">
+                    <label>Destinataire (email du patient)</label>
+                    <input type="email" id="emailTo" class="form-control" placeholder="patient@exemple.fr">
+                </div>
+                <div class="form-group">
+                    <label>Objet</label>
+                    <input type="text" id="emailSubject" class="form-control" placeholder="Votre facture">
+                </div>
+                <div class="form-group">
+                    <label>Corps du message</label>
+                    <textarea id="emailBody" class="form-control" rows="6"
+                        placeholder="Bonjour,\n\nVeuillez trouver ci-joint votre facture…"></textarea>
+                </div>
+                <div class="email-info-box">
+                    <span>ℹ️</span>
+                    <span>Gmail s'ouvrira dans un nouvel onglet avec le message pré-rempli. Vous pourrez y joindre le
+                        PDF de la facture (à imprimer au préalable).</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-right">
+                    <button class="btn btn-secondary" onclick="closeModal('modalEmailFacture')">Annuler</button>
+                    <button class="btn btn-primary" onclick="sendFactureByGmail()">📨 Ouvrir Gmail</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Détail Séance (lecture seule) -->
+    <div class="modal-overlay" id="modalSeanceDetail">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>Détail de la séance</h2>
+                <button class="modal-close" onclick="closeModal('modalSeanceDetail')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="seanceDetailContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modalSeanceDetail')">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/data.js"></script>
+    <script src="js/patient-autocomplete.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/patients.js"></script>
+    <script src="js/sessions.js"></script>
+    <script src="js/billing.js"></script>
+    <script src="js/planning.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/template-editor.js"></script>
+</body>
+
+</html>
