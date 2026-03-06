@@ -545,10 +545,14 @@ async function checkUpdateReminder() {
 
             // POPUP Modal
             const modalTag = document.getElementById('modalUpdateTag');
-            if (modalTag) {
-                modalTag.textContent = 'Version ' + data.tag;
-                openModal('modalUpdateNotice');
-            }
+            const modalTitle = document.getElementById('modalUpdateTitle');
+            const modalBody = document.getElementById('modalUpdateBody');
+
+            if (modalTag) modalTag.textContent = 'Version ' + data.tag;
+            if (modalTitle && data.name) modalTitle.textContent = data.name;
+            if (modalBody && data.body) modalBody.innerHTML = data.body.replace(/\n/g, '<br>');
+
+            openModal('modalUpdateNotice');
         }
     } catch (e) {
         console.warn('Erreur checkUpdateReminder:', e);
