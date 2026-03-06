@@ -497,7 +497,60 @@ async function applyUpdate() {
     } catch (e) {
         console.error(e);
         showToast('Erreur lors de l\'installation : ' + e.message, 'error');
-        document.getElementById('btnApplyUpdate').disabled = false;
-        document.getElementById('btnApplyUpdate').textContent = '🚀 Installer la mise à jour';
+        const btn = document.getElementById('btnApplyUpdate');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🚀 Installer la mise à jour';
+        }
+    }
+}
+
+/**
+ * Vérifie silencieusement au démarrage et périodiquement si une mise à jour est disponible
+ */
+async function checkUpdateReminder() {
+    try {
+        const currentVersionRes = await fetch('http://localhost:5180/api/version');
+        const currentVersionData = await currentVersionRes.json();
+        const currentVersion = currentVersionData.version || '1.1.0';
+
+        const res = await fetch(`http://localhost:5180/api/check-update?repo=${GITHUB_REPO}`);
+        const data = await res.json();
+
+        if (data.tag && data.tag !== currentVersion) {
+            _latestUpdateData = data;
+            const area = document.getElementById('globalAlertArea');
+            if (area) {
+                const existing = area.querySelector('.update-alert');
+                if (existing) existing.remove();
+
+                const div = document.createElement('div');
+                div.className = 'global-alert update-alert';
+                div.style.background = 'linear-gradient(135deg, #6b8dd6, #8b5cf6)';
+                div.style.border = '1px solid rgba(255,255,255,0.2)';
+                div.style.marginTop = '10px';
+                div.innerHTML = `
+                    <div class="global-alert-content">
+                        <span class="global-alert-icon">🚀</span>
+                        <span>Dernière version <strong>${data.tag}</strong> disponible !</span>
+                    </div>
+                    <div class="global-alert-actions" style="margin-left: auto;">
+                        <button class="btn btn-primary btn-sm" style="background:white; color:#4f72c4; font-weight:700;" onclick="applyUpdate()">
+                            Installer maintenant
+                        </button>
+                    </div>
+                `;
+                area.appendChild(div);
+            }
+
+            // POPUP Modal
+            const modalTag = document.getElementById('modalUpdateTag');
+            if (modalTag) {
+                modalTag.textContent = 'Version ' + data.tag;
+                openModal('modalUpdateNotice');
+            }
+        }
+    } catch (e) {
+        console.warn('Erreur checkUpdateReminder:', e);
     }
 }

@@ -561,7 +561,22 @@ async function init() {
 
     // Rappel de sauvegarde
     if (typeof checkBackupReminder === 'function') {
-        setTimeout(checkBackupReminder, 2000); // Attendre un peu après le chargement
+        setTimeout(checkBackupReminder, 2000);
+    }
+
+    // Afficher la version dans la sidebar
+    fetch('http://localhost:5180/api/version')
+        .then(res => res.json())
+        .then(data => {
+            const el = document.getElementById('sidebarVersion');
+            const v = data.version || '1.1.0';
+            if (el) el.textContent = 'v' + v;
+        })
+        .catch(err => console.error("Erreur version sidebar:", err));
+
+    // Vérifier les mises à jour au démarrage
+    if (typeof checkUpdateReminder === 'function') {
+        setTimeout(checkUpdateReminder, 1000);
     }
 }
 

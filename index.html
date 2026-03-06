@@ -73,7 +73,10 @@
                 <span class="theme-toggle-icon" id="themeToggleIcon">🌙</span>
                 <span class="theme-toggle-label" id="themeToggleLabel">Mode sombre</span>
             </button>
-            <div class="cabinet-info" id="sidebarCabinetName">Cabinet Ostéopathique</div>
+            <div class="sidebar-info-row">
+                <div class="cabinet-info" id="sidebarCabinetName">Cabinet Ostéopathique</div>
+                <div class="app-version" id="sidebarVersion">v...</div>
+            </div>
         </div>
     </aside>
 
@@ -1109,6 +1112,36 @@ Cordialement,
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('modalSeanceDetail')">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Mise à jour disponible -->
+    <div class="modal-overlay" id="modalUpdateNotice">
+        <div class="modal modal-sm"
+            style="text-align: center; max-width: 400px; padding: 30px; height: auto !important;">
+            <div style="font-size: 60px; margin-bottom: 20px;">🚀</div>
+            <h2 style="margin-bottom: 10px; font-size: 20px; font-weight: 750;">Une mise à jour est disponible !</h2>
+            <p id="modalUpdateTag"
+                style="color:var(--primary-light); font-weight:700; font-size: 16px; margin-bottom: 15px;"></p>
+            <p style="color:var(--text-muted); font-size: 13.5px; line-height: 1.6; margin-bottom: 25px;">
+                Une nouvelle version du logiciel est prête à être installée.<br>Donnez un coup de boost à votre cabinet
+                !
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-primary btn-lg w-100" onclick="closeModal('modalUpdateNotice'); applyUpdate()"
+                    style="justify-content: center;">
+                    Installer maintenant
+                </button>
+                <button class="btn btn-secondary w-100"
+                    onclick="closeModal('modalUpdateNotice'); showPage('parametres'); setTimeout(checkUpdate, 300);"
+                    style="justify-content: center; background:transparent;">
+                    En savoir plus
+                </button>
+                <button class="btn btn-sm btn-outline w-100" onclick="closeModal('modalUpdateNotice')"
+                    style="margin-top: 10px; border:none;">
+                    Pas maintenant
+                </button>
             </div>
         </div>
     </div>
