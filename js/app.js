@@ -555,7 +555,19 @@ async function init() {
     initGlobalAutocomplete('patientContraIndications', () => pData().map(p => p.contraIndications));
 
     // Séances
-    initGlobalAutocomplete('seanceAnamnese', () => sData().map(s => s.anamnese));
+    const getAllMotifs = () => {
+        const motifs = [];
+        sData().forEach(s => {
+            if (s.anamnese) {
+                const parts = s.anamnese.split('|||');
+                if (parts[0]) motifs.push(parts[0].trim());
+                if (parts[1]) motifs.push(parts[1].trim());
+            }
+        });
+        return motifs;
+    };
+    initGlobalAutocomplete('seanceAnamnese', getAllMotifs);
+    initGlobalAutocomplete('seanceMotif2', getAllMotifs);
     initGlobalAutocomplete('seanceBilan', () => sData().map(s => s.bilan));
     initGlobalAutocomplete('seanceConseils', () => sData().map(s => s.conseils));
 

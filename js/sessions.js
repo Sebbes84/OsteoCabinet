@@ -110,6 +110,7 @@ function openSeanceModal(id, prePatientId, preDate) {
     document.getElementById('seanceMontant').value = '';
     document.getElementById('seanceStatut').value = 'planifiee';
     document.getElementById('seanceAnamnese').value = '';
+    if (document.getElementById('seanceMotif2')) document.getElementById('seanceMotif2').value = '';
     document.getElementById('seanceBilan').value = '';
     document.getElementById('seanceConseils').value = '';
     document.getElementById('seanceProchaine').value = '';
@@ -147,7 +148,17 @@ function openSeanceModal(id, prePatientId, preDate) {
         setAcValue('acSeancePatient', s.patientId || '');
         document.getElementById('seanceDate').value = s.date || '';
         document.getElementById('seanceHeure').value = s.heure || '';
-        document.getElementById('seanceAnamnese').value = s.anamnese || '';
+        
+        let m1 = s.anamnese || '';
+        let m2 = '';
+        if (m1.includes('|||')) {
+            const parts = m1.split('|||');
+            m1 = parts[0];
+            m2 = parts[1] || '';
+        }
+        document.getElementById('seanceAnamnese').value = m1;
+        if (document.getElementById('seanceMotif2')) document.getElementById('seanceMotif2').value = m2;
+
         document.getElementById('seanceBilan').value = s.bilan || '';
         document.getElementById('seanceConseils').value = s.conseils || '';
         document.getElementById('seanceProchaine').value = s.prochaine || '';
@@ -336,7 +347,9 @@ function saveSeance() {
             type: typeName,
             montant: parseFloat(typeTarif) || 0,
             statut: document.getElementById('seanceStatut').value || 'planifiee',
-            anamnese: document.getElementById('seanceAnamnese').value.trim(),
+            anamnese: document.getElementById('seanceMotif2').value.trim() ? 
+                document.getElementById('seanceAnamnese').value.trim() + "|||" + document.getElementById('seanceMotif2').value.trim() : 
+                document.getElementById('seanceAnamnese').value.trim(),
             bilan: document.getElementById('seanceBilan').value.trim(),
             conseils: document.getElementById('seanceConseils').value.trim(),
             prochaine: document.getElementById('seanceProchaine').value.trim(),
