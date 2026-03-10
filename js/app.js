@@ -163,14 +163,14 @@ function closeModal(id) {
     }
 }
 
-// Close modal on overlay click
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', e => {
-        if (e.target === overlay) {
-            closeModal(overlay.id);
-        }
-    });
-});
+// Désactivé à la demande de l'utilisateur : on ne ferme plus au clic extérieur
+// document.querySelectorAll('.modal-overlay').forEach(overlay => {
+//     overlay.addEventListener('click', e => {
+//         if (e.target === overlay) {
+//             closeModal(overlay.id);
+//         }
+//     });
+// });
 
 // ===== TABS =====
 function switchTab(tabId, btn) {
@@ -322,84 +322,141 @@ function renderDashboard() {
         .reduce((sum, s) => sum + (parseFloat(s.montant) || 0), 0);
     document.getElementById('statCAMois').textContent = formatMontant(caPeriod);
 
-    // Prochaines séances
-    const upcoming = seances
-        .filter(s => s.date && s.date >= today && s.statut === 'planifiee')
-        .sort((a, b) => (a.date + (a.heure || '')) > (b.date + (b.heure || '')) ? 1 : -1);
-
+    // Prochaines séances / Derniers patients
+    const toggleDash = document.getElementById('dashSeancesToggle');
+    const seancesViewMode = toggleDash ? toggleDash.value : 'last20';
     const upEl = document.getElementById('dashSeancesProchaines');
-    if (upcoming.length === 0) {
-        upEl.innerHTML = '<div class="empty-state">Aucune séance à venir</div>';
+    const actionBtn = document.getElementById('dashActionBtn');
+
+    if (seancesViewMode === 'next') {
+        if (actionBtn) {
+            actionBtn.innerHTML = 'Voir planning →';
+            actionBtn.setAttribute('onclick', "showPage('planning')");
+        }
+        const upcoming = seances
+            .filter(s => s.date && s.date >= today && s.statut === 'planifiee')
+            .sort((a, b) => (a.date + (a.heure || '')) > (b.date + (b.heure || '')) ? 1 : -1);
+
+        if (upcoming.length === 0) {
+            upEl.innerHTML = '<div class="empty-state">Aucune séance à venir</div>';
+        } else {
+            // Calcul des seuils de dates
+            const todayDate = new Date(today + 'T00:00:00');
+            const tomorrow = new Date(todayDate); tomorrow.setDate(todayDate.getDate() + 1);
+            const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+
+            // Début et fin de la semaine courante (lundi → dimanche)
+            const dayOfWeek = (todayDate.getDay() + 6) % 7; // 0=lundi
+            const weekStart = new Date(todayDate); weekStart.setDate(todayDate.getDate() - dayOfWeek);
+            const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+            const weekEndStr = weekEnd.toISOString().slice(0, 10);
+
+            // Semaine prochaine
+            const nextWeekStart = new Date(weekEnd); nextWeekStart.setDate(weekEnd.getDate() + 1);
+            const nextWeekEnd = new Date(nextWeekStart); nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+            const nextWeekStartStr = nextWeekStart.toISOString().slice(0, 10);
+            const nextWeekEndStr = nextWeekEnd.toISOString().slice(0, 10);
+
+            // Fin du mois courant
+            const monthEnd = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
+            const monthEndStr = monthEnd.toISOString().slice(0, 10);
+
+            function getGroup(dateStr) {
+                if (dateStr === today) return 'Aujourd\'hui';
+                if (dateStr === tomorrowStr) return 'Demain';
+                if (dateStr <= weekEndStr) return 'Cette semaine';
+                if (dateStr <= nextWeekEndStr) return 'La semaine prochaine';
+                if (dateStr <= monthEndStr) return 'Ce mois-ci';
+                return 'Plus tard';
+            }
+
+            const groupOrder = ["Aujourd'hui", 'Demain', 'Cette semaine', 'La semaine prochaine', 'Ce mois-ci', 'Plus tard'];
+
+            // Grouper les séances
+            const groups = {};
+            upcoming.forEach(s => {
+                const g = getGroup(s.date);
+                if (!groups[g]) groups[g] = [];
+                groups[g].push(s);
+            });
+
+            let html = '<div class="upcoming-list">';
+            groupOrder.forEach(label => {
+                if (!groups[label]) return;
+                html += `<div class="upcoming-separator">${label}</div>`;
+                groups[label].forEach(s => {
+                    const d = new Date(s.date + 'T00:00:00');
+                    const p = DB.getPatientById(s.patientId);
+                    // On vérifie si calcAge et relativeDuration existent (par sécurité) avant de les utiliser
+                    const age = (p && p.dateNaissance && typeof calcAge === 'function') ? calcAge(p.dateNaissance) : null;
+                    const seancesRealisees = p ? DB.getSeancesByPatient(p.id).filter(x => x.statut === 'realisee') : [];
+                    const derniereRealisee = seancesRealisees.sort((a, b) => b.date > a.date ? 1 : -1)[0];
+                    const chips = [];
+                    if (age !== null) chips.push(`<span class="psb-chip psb-chip-sm">🎂 ${age} ans</span>`);
+                    chips.push(`<span class="psb-chip psb-chip-sm">🩺 ${seancesRealisees.length} séance${seancesRealisees.length > 1 ? 's' : ''}</span>`);
+                    if (derniereRealisee && typeof relativeDuration === 'function') chips.push(`<span class="psb-chip psb-chip-sm psb-last">📅 ${relativeDuration(derniereRealisee.date)}</span>`);
+
+                    html += `<div class="upcoming-item upcoming-item-flat" style="cursor:pointer" onclick="openPatientModal('${s.patientId}')">
+                      <span class="uif-datetime">${pad(d.getDate())}/${pad(d.getMonth() + 1)} <strong>${s.heure || '?'}</strong></span>
+                      <span class="uif-sep">·</span>
+                      <span class="uif-patient">${getPatientName(s.patientId)}</span>
+                      <span class="uif-chips">${chips.join('')}</span>
+                    </div>`;
+                });
+            });
+            html += '</div>';
+            upEl.innerHTML = html;
+        }
     } else {
-        // Calcul des seuils de dates
-        const todayDate = new Date(today + 'T00:00:00');
-        const tomorrow = new Date(todayDate); tomorrow.setDate(todayDate.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+        if (actionBtn) {
+            actionBtn.innerHTML = 'Voir patients →';
+            actionBtn.setAttribute('onclick', "showPage('patients')");
+        }
+        // Mode 'last20'
+        const realises = seances
+            .filter(s => s.date <= today && s.statut === 'realisee')
+            .sort((a, b) => (b.date + (b.heure || '')) > (a.date + (a.heure || '')) ? 1 : -1);
 
-        // Début et fin de la semaine courante (lundi → dimanche)
-        const dayOfWeek = (todayDate.getDay() + 6) % 7; // 0=lundi
-        const weekStart = new Date(todayDate); weekStart.setDate(todayDate.getDate() - dayOfWeek);
-        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
-        const weekEndStr = weekEnd.toISOString().slice(0, 10);
-
-        // Semaine prochaine
-        const nextWeekStart = new Date(weekEnd); nextWeekStart.setDate(weekEnd.getDate() + 1);
-        const nextWeekEnd = new Date(nextWeekStart); nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
-        const nextWeekStartStr = nextWeekStart.toISOString().slice(0, 10);
-        const nextWeekEndStr = nextWeekEnd.toISOString().slice(0, 10);
-
-        // Fin du mois courant
-        const monthEnd = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
-        const monthEndStr = monthEnd.toISOString().slice(0, 10);
-
-        function getGroup(dateStr) {
-            if (dateStr === today) return 'Aujourd\'hui';
-            if (dateStr === tomorrowStr) return 'Demain';
-            if (dateStr <= weekEndStr) return 'Cette semaine';
-            if (dateStr <= nextWeekEndStr) return 'La semaine prochaine';
-            if (dateStr <= monthEndStr) return 'Ce mois-ci';
-            return 'Plus tard';
+        const lastPatients = [];
+        const seenPids = new Set();
+        for (const s of realises) {
+            if (!seenPids.has(s.patientId)) {
+                seenPids.add(s.patientId);
+                lastPatients.push(s);
+                // On limite à 100 pour garder de bonnes performances, tout en permettant le scroll
+                if (lastPatients.length >= 100) break;
+            }
         }
 
-        const groupOrder = ["Aujourd'hui", 'Demain', 'Cette semaine', 'La semaine prochaine', 'Ce mois-ci', 'Plus tard'];
-
-        // Grouper les séances
-        const groups = {};
-        upcoming.forEach(s => {
-            const g = getGroup(s.date);
-            if (!groups[g]) groups[g] = [];
-            groups[g].push(s);
-        });
-
-        let html = '<div class="upcoming-list">';
-        groupOrder.forEach(label => {
-            if (!groups[label]) return;
-            html += `<div class="upcoming-separator">${label}</div>`;
-            groups[label].forEach(s => {
+        if (lastPatients.length === 0) {
+            upEl.innerHTML = '<div class="empty-state">Aucun patient consulté récemment</div>';
+        } else {
+            let html = '<div class="upcoming-list">';
+            lastPatients.forEach(s => {
                 const d = new Date(s.date + 'T00:00:00');
                 const p = DB.getPatientById(s.patientId);
-                const age = p && p.dateNaissance ? calcAge(p.dateNaissance) : null;
+                const age = (p && p.dateNaissance && typeof calcAge === 'function') ? calcAge(p.dateNaissance) : null;
                 const seancesRealisees = p ? DB.getSeancesByPatient(p.id).filter(x => x.statut === 'realisee') : [];
-                const derniereRealisee = seancesRealisees.sort((a, b) => b.date > a.date ? 1 : -1)[0];
+
                 const chips = [];
                 if (age !== null) chips.push(`<span class="psb-chip psb-chip-sm">🎂 ${age} ans</span>`);
                 chips.push(`<span class="psb-chip psb-chip-sm">🩺 ${seancesRealisees.length} séance${seancesRealisees.length > 1 ? 's' : ''}</span>`);
-                if (derniereRealisee) chips.push(`<span class="psb-chip psb-chip-sm psb-last">📅 ${relativeDuration(derniereRealisee.date)}</span>`);
+                if (typeof relativeDuration === 'function') chips.push(`<span class="psb-chip psb-chip-sm psb-last">📅 ${relativeDuration(s.date)}</span>`);
 
                 html += `<div class="upcoming-item upcoming-item-flat" style="cursor:pointer" onclick="openPatientModal('${s.patientId}')">
-                  <span class="uif-datetime">${pad(d.getDate())}/${pad(d.getMonth() + 1)} <strong>${s.heure || '?'}</strong></span>
+                  <span class="uif-datetime">${pad(d.getDate())}/${pad(d.getMonth() + 1)}</span>
                   <span class="uif-sep">·</span>
                   <span class="uif-patient">${getPatientName(s.patientId)}</span>
                   <span class="uif-chips">${chips.join('')}</span>
                 </div>`;
             });
-        });
-        html += '</div>';
-        upEl.innerHTML = html;
+            html += '</div>';
+            upEl.innerHTML = html;
+        }
     }
 
     // Factures récentes
-    const recentFactures = [...factures].sort((a, b) => b.createdAt > a.createdAt ? 1 : -1).slice(0, 5);
+    const recentFactures = [...factures].sort((a, b) => b.createdAt > a.createdAt ? 1 : -1).slice(0, 100);
     const facEl = document.getElementById('dashFacturesRecentes');
     if (recentFactures.length === 0) {
         facEl.innerHTML = '<div class="empty-state">Aucune facture récente</div>';
@@ -540,6 +597,21 @@ async function init() {
 
     showPage('dashboard');
     if (typeof initAddressAutocomplete === 'function') initAddressAutocomplete();
+
+    // Sentry - Identifier les cabinets pour le comptage des versions / remontée d'erreurs
+    if (typeof Sentry !== 'undefined' && Sentry.onLoad) {
+        Sentry.onLoad(function () {
+            // En utilisant les 5 derniers chiffres du SIRET ou de l'ADELI du cabinet
+            // On évite d'envoyer la donnée personnelle, tout en créant un ID unique pour grouper vos logs
+            const idCabinet = settings.adeli ? settings.adeli.slice(-5) : (settings.siret ? settings.siret.slice(-5) : 'inconnu');
+            Sentry.setTag("instance_id", idCabinet);
+
+            // On masque le nom (Ex: Cabinet Paris -> Cab***)
+            if (settings.cabinetName) {
+                Sentry.setTag("cabinet_nom_masque", settings.cabinetName.substring(0, 3) + "***");
+            }
+        });
+    }
 
     // Initialisation des autocomplétions globales
     const pData = () => DB.getPatients();

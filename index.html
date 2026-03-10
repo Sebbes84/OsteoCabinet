@@ -13,6 +13,30 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+
+    <!-- Sentry SDK pour capture des erreurs JS et Analytics -->
+    <script src="https://js-de.sentry-cdn.com/1cd09dcbc4d3018d189c2bb1a2483d31.min.js" crossorigin="anonymous"></script>
+    <script>
+        Sentry.onLoad(function () {
+            // On récupère la version locale du logiciel au démarrage
+            fetch('http://localhost:5180/api/version')
+                .then(res => res.json())
+                .then(data => {
+                    Sentry.init({
+                        dsn: "https://1cd09dcbc4d3018d189c2bb1a2483d31@o4511014108856320.ingest.de.sentry.io/4511014120521808",
+                        release: "osteocabinet@" + (data.version || "inconnue"),
+                        // Activation explicite du monitoring des sessions (pour les statistiques de version sans bugs)
+                        autoSessionTracking: true,
+                    });
+                })
+                .catch(err => {
+                    Sentry.init({
+                        dsn: "https://1cd09dcbc4d3018d189c2bb1a2483d31@o4511014108856320.ingest.de.sentry.io/4511014120521808",
+                        autoSessionTracking: true,
+                    });
+                });
+        });
+    </script>
 </head>
 
 <body>
@@ -153,11 +177,19 @@
                 <div class="dashboard-grid">
                     <div class="card">
                         <div class="card-header">
-                            <h2 class="card-title">Prochaines séances</h2>
-                            <button class="btn btn-sm btn-primary" onclick="showPage('planning')">Voir planning
+                            <h2 class="card-title" style="display: flex; align-items: center;">
+                                <select id="dashSeancesToggle" class="form-control form-control-sm"
+                                    style="width: auto; font-size: inherit; font-weight: inherit; font-family: inherit; padding: 0 24px 0 0; border: none; background: transparent; cursor: pointer; color: inherit; appearance: none; -webkit-appearance: none; outline: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right center;"
+                                    onchange="renderDashboard()">
+                                    <option value="last20">Derniers patients</option>
+                                    <option value="next">Prochaines séances</option>
+                                </select>
+                            </h2>
+                            <button id="dashActionBtn" class="btn btn-sm btn-primary"
+                                onclick="showPage('patients')">Voir patients
                                 →</button>
                         </div>
-                        <div id="dashSeancesProchaines" class="empty-state">Aucune séance à venir</div>
+                        <div id="dashSeancesProchaines" class="empty-state">Chargement...</div>
                     </div>
                     <div class="card">
                         <div class="card-header">
@@ -805,7 +837,8 @@ Cordialement,
                     </div>
                     <div class="form-group">
                         <label>Situation professionnelle</label>
-                        <input type="text" id="patientMutuelle" class="form-control" list="sitProfList" placeholder="Actif, retraité, sans emploi…">
+                        <input type="text" id="patientMutuelle" class="form-control" list="sitProfList"
+                            placeholder="Actif, retraité, sans emploi…">
                         <datalist id="sitProfList">
                             <option value="Actif/active">
                             <option value="Retraité/retraitée">
@@ -1056,7 +1089,9 @@ Cordialement,
                     <button class="btn btn-secondary" onclick="closeModal('modalFacturePreview')">Fermer</button>
                     <button class="btn btn-outline" onclick="openEmailModal()" id="btnEnvoyerMail"
                         title="Envoyer par Gmail">📧 Envoyer par Gmail</button>
-                    <button class="btn btn-primary" onclick="printFactureWithTemplate()">🖨 Imprimer / PDF</button>
+                    <button class="btn btn-outline" onclick="downloadFacturePDF()"
+                        title="Télécharger la facture en PDF">📄 PDF</button>
+                    <button class="btn btn-primary" onclick="printFactureWithTemplate()">🖨 Imprimer</button>
                 </div>
             </div>
         </div>
@@ -1151,6 +1186,9 @@ Cordialement,
 
     <!-- Toast notifications -->
     <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Librairie pour génération PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script src="js/data.js"></script>
     <script src="js/patient-autocomplete.js"></script>

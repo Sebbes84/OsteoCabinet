@@ -503,9 +503,10 @@ function printFacture() {
 <title>Facture</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
+  @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; font-size: 13px; background: white; color: #111; padding: 32px; }
-  .invoice-preview { max-width: 800px; margin: 0 auto; }
+  body { font-family: 'Inter', sans-serif; font-size: 13px; background: white; color: #111; padding: 0; margin: 0; }
+  .invoice-preview { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 15mm 20mm; box-shadow: none; border-radius: 0; }
   .invoice-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e0e8f0; }
   .invoice-logo img { max-height: 70px; max-width: 200px; }
   .no-logo { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #2c4a8c; }
@@ -518,7 +519,7 @@ function printFacture() {
   .invoice-from h3, .invoice-to h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #a0a8b8; margin-bottom: 8px; }
   .invoice-from p, .invoice-to p { line-height: 1.8; color: #333; }
   .invoice-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-  .invoice-table th { background: #f0f5fc; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4a6a9c; }
+  .invoice-table th { background: #f0f5fc !important; -webkit-print-color-adjust: exact; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #4a6a9c; }
   .invoice-table th:last-child { text-align: right; }
   .invoice-table td { padding: 12px 14px; border-bottom: 1px solid #eef2f8; color: #333; }
   .invoice-table td:last-child { text-align: right; font-weight: 600; }
@@ -527,7 +528,7 @@ function printFacture() {
   .invoice-total-table td { padding: 5px 12px; color: #555; }
   .invoice-total-table td:last-child { text-align: right; font-weight: 600; }
   .invoice-total-table .total-row td { padding-top: 10px; font-size: 16px; font-weight: 700; color: #2c4a8c; border-top: 2px solid #2c4a8c; }
-  .invoice-payment-info { background: #f8fbff; border: 1px solid #d8e8f8; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; font-size: 12.5px; }
+  .invoice-payment-info { background: #f8fbff !important; -webkit-print-color-adjust: exact; border: 1px solid #d8e8f8; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; font-size: 12.5px; }
   .invoice-payment-info strong { color: #2c4a8c; }
   .invoice-signature { display: flex; justify-content: flex-end; margin-bottom: 24px; }
   .invoice-signature-block { text-align: center; }
@@ -544,4 +545,67 @@ ${content.outerHTML}
   printWin.document.close();
   printWin.focus();
   setTimeout(() => { printWin.print(); printWin.close(); }, 600);
+}
+
+/**
+ * Génère et télécharge la facture au format PDF
+ */
+function downloadFacturePDF() {
+  const element = document.getElementById('printableInvoice');
+  if (!element) {
+    showToast("Erreur : contenu de la facture introuvable.", "error");
+    return;
+  }
+
+  // Récupérer les infos pour le nom du fichier
+  const f = DB.getFactureById(_currentPreviewFactureId);
+  const fileName = f ? `Facture_${f.numero.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Facture.pdf';
+
+  showToast("Génération du PDF...", "info");
+
+  // On passe en mode PDF (pas de marges, pleine page)
+  element.classList.add('pdf-mode');
+  const oldStyle = element.getAttribute('style');
+
+  // On récupère les dimensions réelles de l'élément (template)
+  // Si c'est un template custom, il a une largeur fixe (souvent 635px)
+  const width = element.offsetWidth || 635;
+  const height = element.offsetHeight || 897;
+
+  if (oldStyle) {
+    element.style.boxShadow = 'none';
+    element.style.margin = '0';
+  }
+
+  const opt = {
+    margin: 0,
+    filename: fileName,
+    image: { type: 'jpeg', quality: 1.0 },
+    html2canvas: {
+      scale: 3,
+      useCORS: true,
+      letterRendering: true,
+      scrollX: 0,
+      scrollY: 0,
+      width: width,
+      height: height
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: 'avoid-all' }
+  };
+
+  // Lancer la génération
+  html2pdf().set(opt).from(element).toPdf().get('pdf').then((pdf) => {
+    element.classList.remove('pdf-mode');
+    if (oldStyle) element.setAttribute('style', oldStyle);
+  }).save()
+    .then(() => {
+      showToast("PDF téléchargé avec succès.", "success");
+    })
+    .catch(err => {
+      console.error("Erreur PDF:", err);
+      element.classList.remove('pdf-mode');
+      if (oldStyle) element.setAttribute('style', oldStyle);
+      showToast("Erreur lors de la génération du PDF.", "error");
+    });
 }

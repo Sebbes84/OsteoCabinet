@@ -259,6 +259,10 @@ function openPatientModal(id) {
   const firstTab = document.querySelector('#modalPatient .tab-btn');
   if (firstTab) switchTab('tabInfos', firstTab);
 
+  // Masquer le bouton de création de séance si on crée un nouveau patient
+  const btnNouvSeance = document.getElementById('btnNouvelleSeancePatient');
+  if (btnNouvSeance) btnNouvSeance.style.display = id ? 'inline-flex' : 'none';
+
   if (id) {
     const p = DB.getPatientById(id);
     if (!p) return;
@@ -475,12 +479,20 @@ function savePatient() {
     showToast('Patient mis à jour.', 'success');
   } else {
     const saved = DB.addPatient(data);
+    document.getElementById('patientId').value = saved.id; // On stocke le nouvel ID pour pouvoir ajouter des séances
+
+    // Le patient est maintenant enregistré, on affiche le bouton Nouvelle séance
+    const btnNouvSeance = document.getElementById('btnNouvelleSeancePatient');
+    if (btnNouvSeance) btnNouvSeance.style.display = 'inline-flex';
+
     // Update history after save
     renderPatientSeancesHistory(saved.id);
     showToast('Patient enregistré.', 'success');
   }
 
-  closeModal('modalPatient');
+  // On ne ferme plus la modale après enregistrement (demande utilisateur)
+  // closeModal('modalPatient');
+
   renderPatients();
   renderSeances();
   renderPlanning();

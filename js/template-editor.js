@@ -913,7 +913,7 @@ function previewFactureWithTemplate(id) {
     .join('');
 
   const html = `
-  <div id="printableInvoice" style="
+  <div class="invoice-preview" id="printableInvoice" style="
     position:relative;
     width:${template.pageWidth || 635}px;
     height:${template.pageHeight || 897}px;
@@ -976,6 +976,9 @@ function printFactureWithTemplate() {
   const settings = DB.getSettings();
   const template = settings.invoiceTemplate;
 
+  const designWidth = template.pageWidth || 635;
+  const scale = 794 / designWidth;
+
   const printWin = window.open('', '_blank', 'width=900,height=700');
   printWin.document.write(`<!DOCTYPE html>
 <html lang="fr">
@@ -984,9 +987,15 @@ function printFactureWithTemplate() {
 <title>Facture</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
+  @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f0f0f0; display: flex; justify-content: center; padding: 32px; }
-  @media print { body { background: white; padding: 0; } }
+  body { background: white; margin: 0; padding: 0; overflow: hidden; }
+  #printableInvoice { 
+    box-shadow: none !important; 
+    margin: 0 !important; 
+    transform: scale(${scale});
+    transform-origin: top left;
+  }
 </style>
 </head>
 <body>

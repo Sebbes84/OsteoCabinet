@@ -59,6 +59,12 @@ body.light-mode .topbar {
   border-bottom: 1px solid rgba(0, 0, 0, 0.09);
 }
 
+select.form-control option,
+select.form-control optgroup {
+  background-color: var(--bg-card);
+  color: var(--text);
+}
+
 body.light-mode .search-bar {
   background: #f4f7fc;
 }
@@ -615,6 +621,8 @@ body.light-mode .app-version {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ===== CARDS ===== */
@@ -2042,6 +2050,16 @@ body.light-mode .status-btn:hover {
 }
 
 /* ===== INVOICE PREVIEW ===== */
+/* Pour la génération PDF sans marges et pleine page */
+.invoice-preview.pdf-mode {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  /* On garde la largeur naturelle du template pour ne pas décaler les champs absolus */
+}
+
 .invoice-preview {
   background: white;
   color: #111;
@@ -3329,4 +3347,11 @@ body.light-mode .note-importante-filled {
 
 body.light-mode .note-importante-alert {
   color: #b91c1c !important;
+}
+
+#dashSeancesProchaines,
+#dashFacturesRecentes {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
