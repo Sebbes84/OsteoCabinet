@@ -26,7 +26,11 @@ async function apiFetch(path, method = "GET", body = null) {
     };
     if (body !== null) opts.body = JSON.stringify(body);
     const res = await fetch(API + path, opts);
-    if (!res.ok) throw new Error(`API ${method} ${path} → ${res.status}`);
+    if (!res.ok) {
+        const errorMsg = `API ${method} ${path} → ${res.status}`;
+        if (typeof showToast === 'function') showToast(errorMsg, 'error');
+        throw new Error(errorMsg);
+    }
     return res.json();
 }
 
@@ -121,7 +125,7 @@ const DB = {
             if (idx !== -1) _cache.seances[idx] = { ..._cache.seances[idx], ...updated };
             _index.seances.set(updated.id, updated);
         }
-        apiFetch(`/sessions/${updated.id}`, "PUT", updated).catch(console.error);
+        apiFetch(`/seances/${updated.id}`, "PUT", updated).catch(console.error);
     },
 
     deleteSeance(id) {
@@ -142,7 +146,7 @@ const DB = {
     getFactures() { return _cache.factures || []; },
 
     addFacture(f) {
-        f.id = Date.now().toString();
+        if (!f.id) f.id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
         f.createdAt = new Date().toISOString();
         _cache.factures.push(f);
         apiFetch("/factures", "POST", f).catch(console.error);

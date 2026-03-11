@@ -466,7 +466,96 @@ Cordialement,
 {nom_cabinet}`;
   document.getElementById('emailBody').value = applyVars(defaultBody);
 
+  // Toggle buttons based on SMTP config
+  const smtpEmail = settings.smtpEmail;
+  const smtpPass = settings.smtpPassword;
+  const smtpEnabled = settings.smtpEnabled;
+
+  if (smtpEnabled && smtpEmail && smtpPass) {
+    document.getElementById('emailClientAddress').innerText = `(${smtpEmail})`;
+    document.getElementById('emailAutoInfo').style.display = 'flex';
+    document.getElementById('emailManualInfo').style.display = 'none';
+    document.getElementById('btnSendEmailAuto').style.display = 'inline-flex';
+    document.getElementById('btnSendGmailManual').classList.remove('btn-primary');
+    document.getElementById('btnSendGmailManual').classList.add('btn-outline');
+  } else {
+    document.getElementById('emailAutoInfo').style.display = 'none';
+    document.getElementById('emailManualInfo').style.display = 'flex';
+    document.getElementById('btnSendEmailAuto').style.display = 'none';
+    document.getElementById('btnSendGmailManual').classList.remove('btn-outline');
+    document.getElementById('btnSendGmailManual').classList.add('btn-primary');
+  }
+
   openModal('modalEmailFacture');
+}
+
+async function sendFactureAuto() {
+  const to = document.getElementById('emailTo').value.trim();
+  const subject = document.getElementById('emailSubject').value.trim();
+  const body = document.getElementById('emailBody').value.trim();
+
+  if (!to) { showToast('Veuillez saisir l\'adresse email du destinataire.', 'error'); return; }
+
+  const btn = document.getElementById('btnSendEmailAuto');
+  const oldText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Envoi...';
+
+  try {
+    showToast("Génération du PDF et envoi...", "info");
+
+    // 1. Generate PDF as base64
+    const element = document.getElementById('printableInvoice');
+    if (!element) throw new Error("Contenu de la facture introuvable.");
+
+    element.classList.add('pdf-mode');
+    const width = element.offsetWidth || 635;
+    const height = element.offsetHeight || 897;
+
+    const opt = {
+      margin: 0,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, width: width, height: height },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Obtenir le PDF en base64
+    if (typeof html2pdf !== 'function') {
+      throw new Error("La bibliothèque PDF n'est pas chargée (vérifiez votre connexion internet).");
+    }
+    const pdfBase64 = await html2pdf().set(opt).from(element).outputPdf('datauristring');
+    element.classList.remove('pdf-mode');
+
+    // 2. Send via backend
+    const f = DB.getFactureById(_currentPreviewFactureId);
+    const fileName = f ? `Facture_${f.numero.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Facture.pdf';
+
+    const response = await fetch('http://localhost:5180/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: to,
+        subject: subject,
+        body: body,
+        attachment: pdfBase64,
+        filename: fileName
+      })
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Erreur lors de l'envoi");
+
+    showToast("Email envoyé avec succès !", "success");
+    closeModal('modalEmailFacture');
+  } catch (err) {
+    console.error("Erreur envoi auto:", err);
+    showToast(err.message || "Erreur lors de l'envoi automatique.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = oldText;
+    const element = document.getElementById('printableInvoice');
+    if (element) element.classList.remove('pdf-mode');
+  }
 }
 
 function sendFactureByGmail() {
@@ -595,6 +684,12 @@ function downloadFacturePDF() {
   };
 
   // Lancer la génération
+  if (typeof html2pdf !== 'function') {
+    showToast("La bibliothèque PDF n'est pas chargée (vérifiez votre connexion internet).", "error");
+    element.classList.remove('pdf-mode');
+    if (oldStyle) element.setAttribute('style', oldStyle);
+    return;
+  }
   html2pdf().set(opt).from(element).toPdf().get('pdf').then((pdf) => {
     element.classList.remove('pdf-mode');
     if (oldStyle) element.setAttribute('style', oldStyle);

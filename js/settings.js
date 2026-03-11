@@ -22,6 +22,10 @@ function loadSettings() {
     document.getElementById('settingEmailBody').value = s.emailBody || '';
     document.getElementById('settingBackupFrequency').value = s.backupFrequency || 'none';
     document.getElementById('settingBackupPath').value = s.backupPath || '';
+    document.getElementById('settingSmtpEmail').value = s.smtpEmail || '';
+    document.getElementById('settingSmtpPassword').value = s.smtpPassword || '';
+    document.getElementById('settingSmtpEnabled').checked = s.smtpEnabled || false;
+    toggleSmtpBox(); // Initial state
 
     // Load version
     fetch('http://localhost:5180/api/version')
@@ -104,6 +108,9 @@ function saveSettings() {
         emailBody: document.getElementById('settingEmailBody').value.trim(),
         backupFrequency: document.getElementById('settingBackupFrequency').value,
         backupPath: document.getElementById('settingBackupPath').value.trim(),
+        smtpEmail: document.getElementById('settingSmtpEmail').value.trim(),
+        smtpPassword: document.getElementById('settingSmtpPassword').value.trim(),
+        smtpEnabled: document.getElementById('settingSmtpEnabled').checked,
         paiements,
     };
 
@@ -448,10 +455,12 @@ async function checkUpdate() {
             _latestUpdateData = data;
             document.getElementById('updateAvailableArea').style.display = 'block';
             document.getElementById('updateVersionInfo').innerHTML = `
-                <strong>Version :</strong> ${data.tag}<br>
-                <strong>Nom :</strong> ${data.name || data.tag}<br>
-                <div style="margin-top:5px; font-size:11px; max-height:100px; overflow-y:auto; color:var(--text-muted)">
-                    ${data.body || 'Aucune note de version.'}
+                <div style="margin-bottom: 12px;">
+                    <strong>Version :</strong> <span style="color:var(--primary-light)">${data.tag}</span><br>
+                    <strong>Nom :</strong> ${data.name || data.tag}
+                </div>
+                <div style="margin-top:10px; font-size:13.3px; max-height:350px; overflow-y:auto; color:var(--text); text-align: left; padding: 20px; background: transparent; border-radius: 12px; border: 1.5px solid var(--border); line-height: 1.6;">
+                    ${parseMarkdown(data.body) || 'Inconnu'}
                 </div>
             `;
             showToast('Une mise à jour est disponible !', 'success');
@@ -550,11 +559,43 @@ async function checkUpdateReminder() {
 
             if (modalTag) modalTag.textContent = 'Version ' + data.tag;
             if (modalTitle && data.name) modalTitle.textContent = data.name;
-            if (modalBody && data.body) modalBody.innerHTML = data.body.replace(/\n/g, '<br>');
+            if (modalBody && data.body) {
+                modalBody.innerHTML = parseMarkdown(data.body);
+            }
 
             openModal('modalUpdateNotice');
         }
     } catch (e) {
         console.warn('Erreur checkUpdateReminder:', e);
     }
+}
+
+function toggleSmtpBox() {
+    const isEnabled = document.getElementById('settingSmtpEnabled').checked;
+    const content = document.getElementById('smtpSettingsContent');
+    if (content) {
+        content.style.display = isEnabled ? 'block' : 'none';
+    }
+}
+
+/**
+ * Petit parseur markdown ultra-léger pour le texte de release
+ */
+function parseMarkdown(text) {
+    if (!text) return '';
+    let html = text
+        // Protection des balises HTML existantes (si besoin)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        // Titres (### Titre)
+        .replace(/^### (.*$)/gim, '<h4 style="margin-top:16px; margin-bottom:6px; color:#4f72c4; font-weight:700;">$1</h4>')
+        .replace(/^## (.*$)/gim, '<h3 style="margin-top:20px; margin-bottom:10px; color:var(--text); border-bottom:1px solid var(--border); padding-bottom:4px; font-weight:700;">$1</h3>')
+        .replace(/^# (.*$)/gim, '<h2 style="margin-top:24px; margin-bottom:12px; color:var(--text); font-weight:800;">$1</h2>')
+        // Gras (**texte**)
+        .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--primary-light, #4f72c4)">$1</strong>')
+        // Liste à puces (- item ou * item)
+        .replace(/^[-\*] (.*$)/gim, '<div style="margin-bottom:4px; padding-left:15px; position:relative;">• $1</div>')
+        // Retours à la ligne simples
+        .replace(/\n/g, '<br>');
+    
+    return html;
 }

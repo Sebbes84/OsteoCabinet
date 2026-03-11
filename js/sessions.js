@@ -339,20 +339,20 @@ function saveSeance() {
         if (!typeName) { showToast('Veuillez sélectionner un type de séance.', 'error'); return; }
 
         const data = {
-            id: document.getElementById('seanceId').value,
+            id: document.getElementById('seanceId')?.value || '',
             patientId,
             date,
             heure,
             duree: parseInt(typeDuree) || 0,
             type: typeName,
             montant: parseFloat(typeTarif) || 0,
-            statut: document.getElementById('seanceStatut').value || 'planifiee',
-            anamnese: document.getElementById('seanceMotif2').value.trim() ? 
-                document.getElementById('seanceAnamnese').value.trim() + "|||" + document.getElementById('seanceMotif2').value.trim() : 
-                document.getElementById('seanceAnamnese').value.trim(),
-            bilan: document.getElementById('seanceBilan').value.trim(),
-            conseils: document.getElementById('seanceConseils').value.trim(),
-            prochaine: document.getElementById('seanceProchaine').value.trim(),
+            statut: document.getElementById('seanceStatut')?.value || 'planifiee',
+            anamnese: (document.getElementById('seanceMotif2')?.value.trim()) ? 
+                (document.getElementById('seanceAnamnese')?.value.trim() || "") + "|||" + document.getElementById('seanceMotif2').value.trim() : 
+                (document.getElementById('seanceAnamnese')?.value.trim() || ""),
+            bilan: document.getElementById('seanceBilan')?.value.trim() || '',
+            conseils: document.getElementById('seanceConseils')?.value.trim() || '',
+            prochaine: document.getElementById('seanceProchaine')?.value.trim() || '',
         };
 
         if (data.id) {

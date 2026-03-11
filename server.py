@@ -12,6 +12,11 @@ import time
 import webbrowser
 import sqlite3
 import shutil
+import smtplib
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import base64
 from urllib.parse import urlparse, parse_qs
 
 PORT = 5180
@@ -28,47 +33,71 @@ def get_db():
 def init_db():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS patients (
-        id TEXT PRIMARY KEY,
-        nom TEXT, prenom TEXT, dateNaissance TEXT, sexe TEXT, nss TEXT,
-        lateralite TEXT, adresse TEXT, codePostal TEXT, ville TEXT,
-        telephone TEXT, email TEXT, medecin TEXT, profession TEXT,
-        mutuelle TEXT, orientation TEXT, notes TEXT, motif TEXT,
-        antecedentsMedicaux TEXT, antecedentsTrauma TEXT, allergies TEXT,
-        traitements TEXT, contraIndications TEXT, noteImportante TEXT, updatedAt TEXT, createdAt TEXT
-    )""")
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS seances (
-        id TEXT PRIMARY KEY, patientId TEXT, date TEXT, heure TEXT,
-        duree INTEGER, type TEXT, montant REAL, statut TEXT,
-        anamnese TEXT, bilan TEXT, conseils TEXT,
-        prochaine TEXT, updatedAt TEXT, createdAt TEXT,
-        FOREIGN KEY(patientId) REFERENCES patients(id)
-    )""")
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS factures (
-        id TEXT PRIMARY KEY, numero TEXT, date TEXT, patientId TEXT,
-        montant REAL, paiement TEXT, statut TEXT, notes TEXT,
-        updatedAt TEXT, createdAt TEXT,
-        FOREIGN KEY(patientId) REFERENCES patients(id)
-    )""")
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS facture_seances (
-        factureId TEXT, seanceId TEXT,
-        PRIMARY KEY (factureId, seanceId),
-        FOREIGN KEY(factureId) REFERENCES factures(id),
-        FOREIGN KEY(seanceId) REFERENCES seances(id)
-    )""")
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS settings (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        data TEXT
-    )""")
-    # Check if settings exists
+    
+    # Structure cible des tables
+    tables = {
+        "patients": """
+            id TEXT PRIMARY KEY,
+            nom TEXT, prenom TEXT, dateNaissance TEXT, sexe TEXT, nss TEXT,
+            lateralite TEXT, adresse TEXT, codePostal TEXT, ville TEXT,
+            telephone TEXT, email TEXT, medecin TEXT, profession TEXT,
+            mutuelle TEXT, orientation TEXT, notes TEXT, motif TEXT,
+            antecedentsMedicaux TEXT, antecedentsTrauma TEXT, allergies TEXT,
+            traitements TEXT, contraIndications TEXT, noteImportante TEXT, updatedAt TEXT, createdAt TEXT
+        """,
+        "seances": """
+            id TEXT PRIMARY KEY, patientId TEXT, date TEXT, heure TEXT,
+            duree INTEGER, type TEXT, montant REAL, statut TEXT,
+            anamnese TEXT, bilan TEXT, conseils TEXT,
+            prochaine TEXT, updatedAt TEXT, createdAt TEXT,
+            FOREIGN KEY(patientId) REFERENCES patients(id)
+        """,
+        "factures": """
+            id TEXT PRIMARY KEY, numero TEXT, date TEXT, patientId TEXT,
+            montant REAL, paiement TEXT, statut TEXT, notes TEXT,
+            updatedAt TEXT, createdAt TEXT,
+            FOREIGN KEY(patientId) REFERENCES patients(id)
+        """,
+        "facture_seances": """
+            factureId TEXT, seanceId TEXT,
+            PRIMARY KEY (factureId, seanceId),
+            FOREIGN KEY(factureId) REFERENCES factures(id),
+            FOREIGN KEY(seanceId) REFERENCES seances(id)
+        """,
+        "settings": "id INTEGER PRIMARY KEY CHECK (id = 1), data TEXT"
+    }
+
+    for table, schema in tables.items():
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS {table} ({schema})")
+        
+        # Migration : Ajout des colonnes manquantes pour les utilisateurs existants
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing_cols = [row[1] for row in cursor.fetchall()]
+        
+        # On parse le schéma pour trouver les colonnes définies
+        defined_cols = []
+        for line in schema.split(','):
+            parts = line.strip().split()
+            if not parts: continue
+            # Nettoye le nom de la colonne (enlève parentheses de fin, espaces, etc.)
+            col_name = parts[0].strip().replace('(', '').replace(')', '')
+            if not col_name: continue
+            if col_name.upper() not in ["FOREIGN", "PRIMARY", "CHECK"]:
+                defined_cols.append(col_name)
+        
+        for col in defined_cols:
+            if col not in existing_cols:
+                print(f"Migration : Ajout de la colonne {col} à la table {table}")
+                try:
+                    cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
+                except Exception as e:
+                    print(f"Erreur migration {table}.{col} : {e}")
+
+    # Initialisation settings par défaut
     cursor.execute("SELECT 1 FROM settings WHERE id = 1")
     if not cursor.fetchone():
         cursor.execute("INSERT INTO settings (id, data) VALUES (1, ?)", (json.dumps({}),))
+    
     conn.commit()
     conn.close()
 
@@ -219,6 +248,10 @@ class OsteoHandler(http.server.SimpleHTTPRequestHandler):
 
         if collection == "upload-image":
             self.handle_upload_image()
+            return
+
+        if collection == "send-email":
+            self.handle_send_email()
             return
 
         if collection == "apply-update":
@@ -436,6 +469,99 @@ class OsteoHandler(http.server.SimpleHTTPRequestHandler):
         conn.commit()
         conn.close()
         self.send_json(200, {"deleted": item_id})
+
+    def handle_send_email(self):
+        try:
+            body = self.read_body()
+            to_email = body.get("to")
+            subject = body.get("subject")
+            content = body.get("body")
+            attachment_b64 = body.get("attachment")
+            filename = body.get("filename", "facture.pdf")
+
+            print(f"Tentative d'envoi d'email à : {to_email}")
+
+            # Get SMTP settings from DB
+            conn = get_db()
+            row = conn.execute("SELECT data FROM settings WHERE id = 1").fetchone()
+            raw_settings = row[0] if row else "{}"
+            settings = json.loads(raw_settings)
+            conn.close()
+
+            smtp_user = settings.get("smtpEmail")
+            smtp_pass = settings.get("smtpPassword")
+            # Port préféré (appris au fil des envois, par défaut 587)
+            preferred_port = settings.get("preferredSmtpPort", 587)
+
+            if not smtp_user or not smtp_pass:
+                print("Erreur : Paramètres SMTP non configurés.")
+                self.send_json(400, {"error": "Paramètres SMTP (Gmail) non configurés ou non enregistrés."})
+                return
+
+            msg = MIMEMultipart()
+            msg['From'] = smtp_user
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(content, 'plain'))
+
+            if attachment_b64:
+                if "," in attachment_b64:
+                    attachment_b64 = attachment_b64.split(",")[1]
+                pdf_data = base64.b64decode(attachment_b64)
+                part = MIMEApplication(pdf_data, Name=filename)
+                part['Content-Disposition'] = f'attachment; filename="{filename}"'
+                msg.attach(part)
+
+            def try_send(port):
+                if port == 465:
+                    print(f"Tentative de connexion SMTP_SSL (465)...")
+                    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+                        server.login(smtp_user, smtp_pass)
+                        server.send_message(msg)
+                    return True
+                else:
+                    print(f"Tentative de connexion SMTP STARTTLS (587)...")
+                    with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
+                        server.starttls()
+                        server.login(smtp_user, smtp_pass)
+                        server.send_message(msg)
+                    return True
+
+            # Stratégie intelligente d'envoi
+            success_port = None
+            try:
+                # 1. On tente le port qui a fonctionné la dernière fois
+                try_send(preferred_port)
+                success_port = preferred_port
+                print(f"Email envoyé via le port préféré ({preferred_port}).")
+            except Exception as e_pref:
+                print(f"Échec sur le port {preferred_port}: {e_pref}")
+                # 2. En cas d'échec, on tente l'autre port
+                other_port = 465 if preferred_port == 587 else 587
+                try:
+                    try_send(other_port)
+                    success_port = other_port
+                    print(f"Email envoyé via le port alternatif ({other_port}).")
+                    
+                    # 3. Comme l'autre port a réussi, on le mémorise comme nouveau port préféré
+                    try:
+                        settings["preferredSmtpPort"] = other_port
+                        conn = get_db()
+                        conn.execute("UPDATE settings SET data = ? WHERE id = 1", (json.dumps(settings),))
+                        conn.commit()
+                        conn.close()
+                        print(f"Nouveau port préféré mémorisé : {other_port}")
+                    except Exception as e_db:
+                        print(f"Erreur lors de la mise à jour du port préféré en DB: {e_db}")
+                except Exception as e_alt:
+                    print(f"Échec total sur les deux ports.")
+                    raise Exception(f"Impossible de se connecter au serveur SMTP (465 & 587). Erreur: {e_alt}")
+
+            self.send_json(200, {"status": "success"})
+        except Exception as e:
+            error_msg = str(e)
+            print(f"Erreur envoi email: {error_msg}")
+            self.send_json(500, {"error": f"Erreur lors de l'envoi : {error_msg}"})
 
     def handle_upload_image(self):
         try:

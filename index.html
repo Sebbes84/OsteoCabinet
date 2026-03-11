@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 
 <head>
@@ -613,13 +613,59 @@
                                         <strong>Gmail</strong>
                                     </div>
                                 </div>
+                                <div class="form-group"
+                                    style="padding: 12px; background: rgba(255,193,7,0.05); border: 1px dashed #ffc107; border-radius: 8px;">
+                                    <div
+                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                        <label style="color:#d39e00; font-weight:700; margin-bottom:0;">🤖 ENVOI ET
+                                            CRÉATION PDF AUTOMATIQUE (SMTP GMAIL)</label>
+                                        <label class="checkbox-label" style="font-weight:700; color:var(--success);">
+                                            <input type="checkbox" id="settingSmtpEnabled" onchange="toggleSmtpBox()">
+                                            ACTIVER
+                                        </label>
+                                    </div>
+                                    <div id="smtpSettingsContent">
+                                        <div class="form-group mt-8">
+                                            <label class="label-sm">Adresse Gmail</label>
+                                            <input type="email" id="settingSmtpEmail" class="form-control"
+                                                placeholder="votre.email@gmail.com">
+                                        </div>
+                                        <div class="form-group mb-0">
+                                            <label class="label-sm">Mot de passe d'application</label>
+                                            <input type="password" id="settingSmtpPassword" class="form-control"
+                                                placeholder="xxxx xxxx xxxx xxxx">
+                                            <small class="text-muted">Générez ce code dans votre compte Google
+                                                (Validation
+                                                en 2 étapes requise).</small>
+                                        </div>
+                                        <div
+                                            style="margin-top: 12px; padding: 12px; background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.2); border-radius: 8px; font-size: 12px; color: #856404; line-height: 1.6;">
+                                            <div
+                                                style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                                <span>🔑</span> Mise en place du mot de passe Gmail :
+                                            </div>
+                                            <ol
+                                                style="padding-left: 20px; margin: 0; display: flex; flex-direction: column; gap: 4px;">
+                                                <li>Activez la <strong>Validation en 2 étapes</strong> sur votre compte
+                                                    Google.</li>
+                                                <li>Accédez directement au lien : <a
+                                                        href="https://myaccount.google.com/apppasswords" target="_blank"
+                                                        style="color:var(--primary); font-weight: 700; text-decoration: underline;">Générer
+                                                        un mot de passe d'application</a></li>
+                                                <li>Sélectionnez un nom (ex: <code>OstéoCabinet</code>) et validez.</li>
+                                                <li>Copiez le code jaune de 16 caractères et collez-le dans le champ
+                                                    ci-dessus.</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
                                 <div class="form-group">
                                     <label>Objet par défaut</label>
                                     <input type="text" id="settingEmailSubject" class="form-control"
                                         placeholder="Votre facture — Cabinet d'Ostéopathie">
                                 </div>
-                            </div>
-                            <div>
                                 <div class="form-group" style="height:100%;">
                                     <label>Corps du message par défaut</label>
                                     <div class="form-hint"
@@ -1088,7 +1134,7 @@ Cordialement,
                 <div class="modal-footer-right">
                     <button class="btn btn-secondary" onclick="closeModal('modalFacturePreview')">Fermer</button>
                     <button class="btn btn-outline" onclick="openEmailModal()" id="btnEnvoyerMail"
-                        title="Envoyer par Gmail">📧 Envoyer par Gmail</button>
+                        title="Envoyer la facture">📧 Envoyer la facture</button>
                     <button class="btn btn-outline" onclick="downloadFacturePDF()"
                         title="Télécharger la facture en PDF">📄 PDF</button>
                     <button class="btn btn-primary" onclick="printFactureWithTemplate()">🖨 Imprimer</button>
@@ -1101,13 +1147,14 @@ Cordialement,
     <div class="modal-overlay" id="modalEmailFacture">
         <div class="modal">
             <div class="modal-header">
-                <h2>📧 Envoyer la facture par Gmail</h2>
+                <h2>📧 Envoyer la facture</h2>
                 <button class="modal-close" onclick="closeModal('modalEmailFacture')">✕</button>
             </div>
             <div class="modal-body">
                 <div class="email-client-badge">
                     <span class="email-client-icon">✉️</span>
-                    <span>Client mail : <strong>Gmail</strong></span>
+                    <span>Client mail : <strong>Gmail</strong> <span id="emailClientAddress"
+                            style="opacity:0.8; font-weight:400; margin-left:8px;"></span></span>
                 </div>
                 <div class="form-group">
                     <label>Destinataire (email du patient)</label>
@@ -1122,16 +1169,25 @@ Cordialement,
                     <textarea id="emailBody" class="form-control" rows="6"
                         placeholder="Bonjour,\n\nVeuillez trouver ci-joint votre facture…"></textarea>
                 </div>
-                <div class="email-info-box">
+                <div class="email-info-box" id="emailAutoInfo"
+                    style="display:none; background:rgba(40, 167, 69, 0.1); border-color:var(--success);">
+                    <span>🤖</span>
+                    <span><strong>Envoi automatique activé.</strong> La facture sera générée en PDF et envoyée
+                        directement avec la pièce jointe.</span>
+                </div>
+                <div class="email-info-box" id="emailManualInfo">
                     <span>ℹ️</span>
-                    <span>Gmail s'ouvrira dans un nouvel onglet avec le message pré-rempli. Vous pourrez y joindre le
-                        PDF de la facture (à imprimer au préalable).</span>
+                    <span>Gmail s'ouvrira dans un nouvel onglet avec le message pré-rempli. Vous devrez joindre le
+                        fichier manuellement.</span>
                 </div>
             </div>
             <div class="modal-footer">
                 <div class="modal-footer-right">
                     <button class="btn btn-secondary" onclick="closeModal('modalEmailFacture')">Annuler</button>
-                    <button class="btn btn-primary" onclick="sendFactureByGmail()">📨 Ouvrir Gmail</button>
+                    <button class="btn btn-outline" id="btnSendGmailManual" onclick="sendFactureByGmail()">📨 Ouvrir
+                        Gmail</button>
+                    <button class="btn btn-primary" id="btnSendEmailAuto" onclick="sendFactureAuto()"
+                        style="background:var(--success); border-color:var(--success);">🚀 Envoyer maintenant</button>
                 </div>
             </div>
         </div>
@@ -1163,7 +1219,7 @@ Cordialement,
             <p id="modalUpdateTag"
                 style="color:var(--primary-light); font-weight:700; font-size: 16px; margin-bottom: 15px;"></p>
             <div id="modalUpdateBody"
-                style="color:var(--text-muted); font-size: 13.5px; line-height: 1.6; margin-bottom: 25px; max-height: 200px; overflow-y: auto;">
+                style="color:var(--text-muted); font-size: 13.5px; line-height: 1.6; margin-bottom: 25px; max-height: 200px; overflow-y: auto; text-align: left;">
                 Une nouvelle version du logiciel est prête à être installée.
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px;">

@@ -232,11 +232,12 @@ function relativeDuration(dateStr) {
 function calcAge(dateNaissance) {
   if (!dateNaissance) return null;
   const dob = new Date(dateNaissance + 'T00:00:00');
+  if (isNaN(dob.getTime())) return null;
   const now = new Date();
   let age = now.getFullYear() - dob.getFullYear();
   const m = now.getMonth() - dob.getMonth();
   if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
-  return age;
+  return isNaN(age) ? null : age;
 }
 
 function openPatientModal(id) {
@@ -448,30 +449,30 @@ function savePatient() {
   if (!nom) { showToast('Le nom est obligatoire.', 'error'); return; }
 
   const data = {
-    id: document.getElementById('patientId').value,
+    id: document.getElementById('patientId')?.value || '',
     nom: formatNom(nom),
     prenom: formatPrenom(prenom),
-    dateNaissance: document.getElementById('patientDateNaissance').value,
-    sexe: document.getElementById('patientSexe').value,
-    nss: document.getElementById('patientNss').value.trim(),
-    lateralite: document.getElementById('patientLateralite').value,
-    adresse: document.getElementById('patientAdresse').value.trim(),
-    codePostal: document.getElementById('patientCodePostal').value.trim(),
-    ville: document.getElementById('patientVille').value.trim(),
-    telephone: document.getElementById('patientTelephone').value.trim(),
-    email: document.getElementById('patientEmail').value.trim(),
-    medecin: document.getElementById('patientMedecin').value.trim(),
-    profession: document.getElementById('patientProfession').value.trim(),
-    mutuelle: document.getElementById('patientMutuelle').value.trim(),
-    orientation: document.getElementById('patientOrientation').value.trim(),
-    notes: document.getElementById('patientNotes').value.trim(),
+    dateNaissance: document.getElementById('patientDateNaissance')?.value || '',
+    sexe: document.getElementById('patientSexe')?.value || '',
+    nss: document.getElementById('patientNss')?.value.trim() || '',
+    lateralite: document.getElementById('patientLateralite')?.value || '',
+    adresse: document.getElementById('patientAdresse')?.value.trim() || '',
+    codePostal: document.getElementById('patientCodePostal')?.value.trim() || '',
+    ville: document.getElementById('patientVille')?.value.trim() || '',
+    telephone: document.getElementById('patientTelephone')?.value.trim() || '',
+    email: document.getElementById('patientEmail')?.value.trim() || '',
+    medecin: document.getElementById('patientMedecin')?.value.trim() || '',
+    profession: document.getElementById('patientProfession')?.value.trim() || '',
+    mutuelle: document.getElementById('patientMutuelle')?.value.trim() || '',
+    orientation: document.getElementById('patientOrientation')?.value.trim() || '',
+    notes: document.getElementById('patientNotes')?.value.trim() || '',
     noteImportante: document.getElementById('patientNoteImportante')?.value.trim() || '',
-    motif: document.getElementById('patientMotif').value.trim(),
-    antecedentsMedicaux: document.getElementById('patientAntecedentsMedicaux').value.trim(),
-    antecedentsTrauma: document.getElementById('patientAntecedentsTrauma').value.trim(),
-    allergies: document.getElementById('patientAllergies').value.trim(),
-    traitements: document.getElementById('patientTraitements').value.trim(),
-    contraIndications: document.getElementById('patientContraIndications').value.trim(),
+    motif: document.getElementById('patientMotif')?.value.trim() || '',
+    antecedentsMedicaux: document.getElementById('patientAntecedentsMedicaux')?.value.trim() || '',
+    antecedentsTrauma: document.getElementById('patientAntecedentsTrauma')?.value.trim() || '',
+    allergies: document.getElementById('patientAllergies')?.value.trim() || '',
+    traitements: document.getElementById('patientTraitements')?.value.trim() || '',
+    contraIndications: document.getElementById('patientContraIndications')?.value.trim() || '',
   };
 
   if (data.id) {
