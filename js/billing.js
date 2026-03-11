@@ -25,7 +25,10 @@ function renderFactures(filtered) {
     <td>${(f.seanceIds || []).length} séance(s)</td>
     <td><strong style="color:var(--success)">${formatMontant(f.montant)}</strong></td>
     <td>${f.paiement || '—'}</td>
-    <td><span class="badge badge-${f.statut}">${getFactureStatusLabel(f.statut)}</span></td>
+    <td>
+      <span class="badge badge-${f.statut}">${getFactureStatusLabel(f.statut)}</span>
+      ${f.sentAt ? `<div style="font-size:10px; color:var(--text-muted); margin-top:4px;">📧 Envoyée le ${formatDate(f.sentAt)}</div>` : ''}
+    </td>
     <td>
       <div class="actions">
         <button class="btn btn-sm btn-outline" onclick="previewFacture('${f.id}')" title="Aperçu / Imprimer">🖨</button>
@@ -107,6 +110,29 @@ function openFactureModal(id, prePatientId, preSeanceIds) {
   }
 
   openModal('modalFacture');
+  updateFactureModalButtons();
+}
+
+function updateFactureModalButtons(isDirty = false) {
+  const fId = document.getElementById('factureId').value;
+  const btnApercu = document.getElementById('btnAperçuFactureModal');
+  const btnSave = document.getElementById('btnSaveFacture');
+
+  if (fId && !isDirty) {
+    btnApercu.style.display = 'block';
+    btnSave.classList.remove('btn-primary');
+    btnSave.classList.add('btn-outline');
+    btnSave.textContent = 'Enregistrer';
+  } else {
+    btnApercu.style.display = 'none';
+    btnSave.classList.remove('btn-outline');
+    btnSave.classList.add('btn-primary');
+    btnSave.textContent = isDirty ? 'Enregistrer les modifications' : 'Enregistrer';
+  }
+}
+
+function onFactureFormChange() {
+  updateFactureModalButtons(true);
 }
 
 // ===== REFRESH NUMERO DE FACTURE =====
@@ -151,6 +177,7 @@ function setFactureStatus(status) {
       paySel.value = 'Carte bancaire';
     }
   }
+  onFactureFormChange();
 }
 
 // ===== LOAD PATIENT SEANCES FOR FACTURE SELECTION =====
@@ -187,7 +214,7 @@ function loadPatientSeancesForFacture(preSelected) {
   container.innerHTML = seances.map(s => {
     const isChecked = preSelected && preSelected.includes(s.id);
     return `<div class="seance-checkbox-item">
-      <input type="checkbox" id="cs_${s.id}" value="${s.id}" ${isChecked ? 'checked' : ''} onchange="updateFactureMontant()">
+      <input type="checkbox" id="cs_${s.id}" value="${s.id}" ${isChecked ? 'checked' : ''} onchange="updateFactureMontant(); onFactureFormChange()">
       <label for="cs_${s.id}">${formatDate(s.date)} ${s.heure || ''} — ${s.type || 'Standard'} — ${formatMontant(s.montant)}</label>
     </div>`;
   }).join('');
@@ -240,14 +267,20 @@ function saveFacture() {
   };
 
   if (data.id) {
-    DB.updateFacture(data);
+    const result = DB.updateFacture(data);
+    if (result && result.id) {
+        document.getElementById('factureId').value = result.id;
+    }
     showToast('Facture mise à jour.', 'success');
   } else {
-    DB.addFacture(data);
+    const result = DB.addFacture(data);
+    if (result && result.id) {
+        document.getElementById('factureId').value = result.id;
+    }
     showToast('Facture enregistrée.', 'success');
   }
 
-  closeModal('modalFacture');
+  updateFactureModalButtons(false);
   renderFactures();
   renderSeances();
   renderPatients();
@@ -413,6 +446,13 @@ function _previewFactureClassique(id) {
   `;
 
   document.getElementById('facturePreviewContent').innerHTML = html;
+  
+  // Mise à jour du titre de la modale avec info d'envoi
+  const titleEl = document.querySelector('#modalFacturePreview h2');
+  if (titleEl) {
+    titleEl.innerHTML = `Aperçu de la facture ${f.sentAt ? `<span style="font-size:12px; font-weight:normal; color:#4f72c4; background:rgba(79,114,196,0.1); padding:2px 8px; border-radius:12px; margin-left:10px;">📧 Envoyée le ${formatDate(f.sentAt)}</span>` : ''}`;
+  }
+
   _currentPreviewFactureId = id;
   openModal('modalFacturePreview');
 }
@@ -545,8 +585,18 @@ async function sendFactureAuto() {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Erreur lors de l'envoi");
 
+    // Enregistrer la date d'envoi
+    const f2 = DB.getFactureById(_currentPreviewFactureId);
+    if (f2) {
+      f2.sentAt = new Date().toISOString();
+      DB.updateFacture(f2);
+      renderFactures();
+    }
+
     showToast("Email envoyé avec succès !", "success");
     closeModal('modalEmailFacture');
+    // Rafraîchir l'aperçu pour montrer l'info d'envoi
+    if (_currentPreviewFactureId) previewFacture(_currentPreviewFactureId);
   } catch (err) {
     console.error("Erreur envoi auto:", err);
     showToast(err.message || "Erreur lors de l'envoi automatique.", "error");
@@ -575,8 +625,19 @@ function sendFactureByGmail() {
 
   const gmailUrl = 'https://mail.google.com/mail/?' + params.toString();
   window.open(gmailUrl, '_blank');
+
+  // On considère qu'elle est envoyée si l'utilisateur a ouvert Gmail
+  const f = DB.getFactureById(_currentPreviewFactureId);
+  if (f) {
+    f.sentAt = new Date().toISOString();
+    DB.updateFacture(f);
+    renderFactures();
+  }
+
   closeModal('modalEmailFacture');
-  showToast('Gmail ouvert dans un nouvel onglet.', 'success');
+  showToast('Gmail ouvert. Facture marquée comme envoyée.', 'success');
+  // Rafraîchir l'aperçu
+  if (_currentPreviewFactureId) previewFacture(_currentPreviewFactureId);
 }
 
 // ===== PRINT =====

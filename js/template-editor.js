@@ -927,6 +927,13 @@ function previewFactureWithTemplate(id) {
   </div>`;
 
   document.getElementById('facturePreviewContent').innerHTML = html;
+  
+  // Mise à jour du titre de la modale avec info d'envoi
+  const titleEl = document.querySelector('#modalFacturePreview h2');
+  if (titleEl) {
+    titleEl.innerHTML = `Aperçu de la facture ${f.sentAt ? `<span style="font-size:12px; font-weight:normal; color:#4f72c4; background:rgba(79,114,196,0.1); padding:2px 8px; border-radius:12px; margin-left:10px;">📧 Envoyée le ${formatDate(f.sentAt)}</span>` : ''}`;
+  }
+
   _currentPreviewFactureId = id;
   openModal('modalFacturePreview');
 }

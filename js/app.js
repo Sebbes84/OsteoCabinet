@@ -469,6 +469,7 @@ function renderDashboard() {
         <span class="invoice-num" style="margin-left: 8px;">(${f.numero})</span>
         <div class="uif-chips">
           <span class="invoice-amount" style="margin-right: 8px;">${formatMontant(f.montant)}</span>
+          ${f.sentAt ? `<span class="badge badge-info" style="font-size: 10px; padding: 2px 6px; margin-right: 4px; background:rgba(79, 114, 196, 0.1); color:var(--primary-light); border:1px solid rgba(79, 114, 196, 0.3);">📧 Envoyée</span>` : ''}
           <span class="badge badge-${f.statut}" style="font-size: 10px; padding: 2px 6px;">${getFactureStatusLabel(f.statut)}</span>
         </div>
       </div>`).join('') + '</div>';

@@ -55,7 +55,7 @@ def init_db():
         "factures": """
             id TEXT PRIMARY KEY, numero TEXT, date TEXT, patientId TEXT,
             montant REAL, paiement TEXT, statut TEXT, notes TEXT,
-            updatedAt TEXT, createdAt TEXT,
+            sentAt TEXT, updatedAt TEXT, createdAt TEXT,
             FOREIGN KEY(patientId) REFERENCES patients(id)
         """,
         "facture_seances": """

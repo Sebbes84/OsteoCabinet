@@ -156,8 +156,11 @@ const DB = {
     updateFacture(updated) {
         updated.updatedAt = new Date().toISOString();
         const idx = _cache.factures.findIndex(f => f.id === updated.id);
-        if (idx !== -1) _cache.factures[idx] = { ..._cache.factures[idx], ...updated };
-        apiFetch(`/factures/${updated.id}`, "PUT", updated).catch(console.error);
+        if (idx !== -1) {
+            _cache.factures[idx] = { ..._cache.factures[idx], ...updated };
+            apiFetch(`/factures/${updated.id}`, "PUT", updated).catch(console.error);
+            return _cache.factures[idx];
+        }
     },
 
     deleteFacture(id) {

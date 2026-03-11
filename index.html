@@ -296,6 +296,7 @@
                                 <th>Durée</th>
                                 <th>Statut</th>
                                 <th>Montant</th>
+                                <th>Facture</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -1061,7 +1062,7 @@ Cordialement,
                 <div class="form-group facture-status-container">
                     <label>Statut de la facture</label>
                     <div class="status-btn-group" id="factureStatusBtnGroup">
-                        <input type="hidden" id="factureStatut" value="emise">
+                        <input type="hidden" id="factureStatut" value="emise" onchange="onFactureFormChange()">
                         <button type="button" class="status-btn" data-status="emise"
                             onclick="setFactureStatus('emise')">📄 Émise</button>
                         <button type="button" class="status-btn" data-status="payee"
@@ -1077,13 +1078,13 @@ Cordialement,
                     </div>
                     <div class="form-group">
                         <label>Date</label>
-                        <input type="date" id="factureDate" class="form-control" onchange="refreshFactureNum()">
+                        <input type="date" id="factureDate" class="form-control" onchange="refreshFactureNum(); onFactureFormChange()">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Patient *</label>
-                    <div id="acFacturePatient" class="patient-ac-container"></div>
-                    <input type="hidden" id="facturePatient">
+                    <div id="acFacturePatient" class="patient-ac-container" onchange="onFactureFormChange()"></div>
+                    <input type="hidden" id="facturePatient" onchange="onFactureFormChange()">
                 </div>
                 <div class="form-group">
                     <label>Séance(s) à facturer</label>
@@ -1094,11 +1095,11 @@ Cordialement,
                 <div class="form-row">
                     <div class="form-group">
                         <label>Montant total</label>
-                        <input type="text" id="factureMontant" class="form-control" placeholder="0,00 €">
+                        <input type="text" id="factureMontant" class="form-control" placeholder="0,00 €" oninput="onFactureFormChange()">
                     </div>
                     <div class="form-group">
                         <label>Moyen de paiement</label>
-                        <select id="facturePaiement" class="form-control">
+                        <select id="facturePaiement" class="form-control" onchange="onFactureFormChange()">
                             <option value="Espèces">Espèces</option>
                             <option value="Chèque">Chèque</option>
                             <option value="Virement">Virement bancaire</option>
@@ -1108,13 +1109,16 @@ Cordialement,
                 </div>
                 <div class="form-group">
                     <label>Notes (optionnel)</label>
-                    <textarea id="factureNotes" class="form-control" rows="2"></textarea>
+                    <textarea id="factureNotes" class="form-control" rows="2" oninput="onFactureFormChange()"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
+                <div class="modal-footer-left">
+                    <button id="btnAperçuFactureModal" class="btn btn-outline" style="display:none;" onclick="previewFacture(document.getElementById('factureId').value)">👁 Aperçu de la facture</button>
+                </div>
                 <div class="modal-footer-right">
-                    <button class="btn btn-secondary" onclick="closeModal('modalFacture')">Annuler</button>
-                    <button class="btn btn-primary" onclick="saveFacture()">Enregistrer</button>
+                    <button class="btn btn-secondary" onclick="closeModal('modalFacture')">Fermer</button>
+                    <button class="btn btn-primary" id="btnSaveFacture" onclick="saveFacture()">Enregistrer</button>
                 </div>
             </div>
         </div>

@@ -55,7 +55,11 @@ function renderMoreSeances() {
 
     const nextChunk = currentSeancesList.slice(renderedSeancesCount, renderedSeancesCount + SESSION_CHUNK_SIZE);
 
-    const rows = nextChunk.map(s => `<tr>
+    const rows = nextChunk.map(s => {
+        const facture = DB.getFactures().find(f => (f.seanceIds || []).includes(s.id));
+        const factureLabel = facture ? `<span class="badge badge-${facture.statut}">${getFactureStatusLabel(facture.statut)}</span>` : '<span class="badge-facture-none">—</span>';
+
+        return `<tr>
     <td>${formatDate(s.date)}</td>
     <td>${s.heure || '—'}</td>
     <td><strong>${getPatientName(s.patientId)}</strong></td>
@@ -63,15 +67,17 @@ function renderMoreSeances() {
     <td>${s.duree || 0} min</td>
     <td><span class="badge badge-${s.statut}">${getSeanceStatusLabel(s.statut)}</span></td>
     <td>${formatMontant(s.montant)}</td>
+    <td>${factureLabel}</td>
     <td>
       <div class="actions">
         <button class="btn btn-sm btn-outline" onclick="openSeanceModal('${s.id}')" title="Modifier">✏️</button>
         <button class="btn btn-sm btn-success" onclick="markSeanceRealisee('${s.id}')" title="Marquer réalisée" ${s.statut === 'realisee' ? 'disabled' : ''}>✅</button>
-        <button class="btn btn-sm btn-warning" onclick="openFactureFromSeance('${s.id}')" title="Facturer">🧾</button>
+        ${facture ? `<button class="btn btn-sm btn-warning" onclick="openFactureModal('${facture.id}')" title="Voir la facture ${facture.numero}">🧾</button>` : `<button class="btn btn-sm btn-outline" onclick="openFactureFromSeance('${s.id}')" title="Créer une facture">🧾+</button>`}
         <button class="btn btn-sm btn-danger" onclick="deleteSeance('${s.id}')" title="Supprimer">🗑</button>
       </div>
     </td>
-  </tr>`).join('');
+  </tr>`;
+    }).join('');
 
     const template = document.createElement('template');
     template.innerHTML = rows;
@@ -406,7 +412,16 @@ function deleteSeance(id) {
 function openFactureFromSeance(seanceId) {
     const s = DB.getSeanceById(seanceId);
     if (!s) return;
-    openFactureModal(null, s.patientId, [seanceId]);
+    
+    // Vérifier si une facture existe déjà pour cette séance
+    const factures = DB.getFactures();
+    const existingFacture = factures.find(f => (f.seanceIds || []).includes(seanceId));
+    
+    if (existingFacture) {
+        openFactureModal(existingFacture.id);
+    } else {
+        openFactureModal(null, s.patientId, [seanceId]);
+    }
 }
 // ===== DELETE SEANCE DEPUIS MODAL =====
 function deleteSeanceFromModal() {
