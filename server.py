@@ -41,8 +41,9 @@ def init_db():
             nom TEXT, prenom TEXT, dateNaissance TEXT, sexe TEXT, nss TEXT,
             lateralite TEXT, adresse TEXT, codePostal TEXT, ville TEXT,
             telephone TEXT, email TEXT, medecin TEXT, profession TEXT,
-            mutuelle TEXT, orientation TEXT, notes TEXT, motif TEXT,
+            situationPro TEXT, mutuelle TEXT, orientation TEXT, notes TEXT, motif TEXT,
             antecedentsMedicaux TEXT, antecedentsTrauma TEXT, allergies TEXT,
+            chirurgie TEXT, digestif TEXT, sport TEXT, gyneco TEXT,
             traitements TEXT, contraIndications TEXT, noteImportante TEXT, updatedAt TEXT, createdAt TEXT
         """,
         "seances": """
