@@ -1,6 +1,7 @@
 /* ============================================================
    SETTINGS.JS — Paramètres du cabinet
    ============================================================ */
+console.log("Loading settings.js...");
 
 // ===== LOAD =====
 function loadSettings() {
@@ -113,6 +114,21 @@ function saveSettings() {
         smtpEnabled: document.getElementById('settingSmtpEnabled').checked,
         paiements,
     };
+
+    // Validation email si SMTP activé
+    if (settings.smtpEnabled) {
+        if (!settings.smtpEmail) {
+            showToast('L\'adresse Gmail est requise pour l\'envoi automatique.', 'error');
+            document.getElementById('settingSmtpEmail').focus();
+            return;
+        }
+        if (!validateSmtpEmail()) return; 
+        if (!settings.smtpPassword) {
+            showToast('Le mot de passe d\'application est requis.', 'error');
+            document.getElementById('settingSmtpPassword').focus();
+            return;
+        }
+    }
 
     DB.saveSettings(settings);
 
@@ -578,6 +594,76 @@ function toggleSmtpBox() {
     }
 }
 
+function validateSmtpEmail() {
+    const emailInput = document.getElementById('settingSmtpEmail');
+    const email = emailInput.value.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (email && !emailRegex.test(email)) {
+        emailInput.style.borderColor = 'var(--danger)';
+        showToast('Format d\'adresse email incorrect.', 'error');
+        return false;
+    } else {
+        emailInput.style.borderColor = '';
+        return true;
+    }
+}
+
+async function testSmtpConfig() {
+    const to = prompt("Entrez une adresse email pour recevoir le test :");
+    if (!to) return;
+    
+    // Validation rapide format email
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+        showToast("Adresse email de test invalide.", "error");
+        return;
+    }
+
+    const logEl = document.getElementById('smtpTestLog');
+    const btn = document.getElementById('btnTestSmtp');
+    
+    // Préparer l'UI
+    if (logEl) {
+        logEl.style.display = 'block';
+        logEl.style.color = 'var(--text-muted)';
+        logEl.textContent = '⏳ Initialisation du test...';
+    }
+    if (btn) btn.disabled = true;
+
+    try {
+        if (logEl) logEl.textContent += '\n📡 Envoi de la requête au serveur...';
+        const res = await fetch('http://localhost:5180/api/test-smtp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            if (logEl) {
+                logEl.style.color = 'var(--success)';
+                logEl.textContent = `✅ Succès : ${data.message || 'Email envoyé !'}`;
+            }
+            showToast("Test SMTP réussi !", "success");
+        } else {
+            if (logEl) {
+                logEl.style.color = 'var(--danger)';
+                logEl.textContent = `❌ Erreur : ${data.error || 'Échec de l\'envoi'}`;
+            }
+            showToast("Échec du test SMTP : " + (data.error || "Erreur inconnue"), "error");
+        }
+    } catch (err) {
+        if (logEl) {
+            logEl.style.color = 'var(--danger)';
+            logEl.textContent = `🌐 Erreur réseau : ${err.message}`;
+        }
+        showToast("Impossible de contacter le serveur.", "error");
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
 /**
  * Petit parseur markdown ultra-léger pour le texte de release
  */
@@ -599,3 +685,26 @@ function parseMarkdown(text) {
     
     return html;
 }
+
+// Fin du fichier - Export global explicite
+window.loadSettings = loadSettings;
+window.saveSettings = saveSettings;
+window.toggleSmtpBox = toggleSmtpBox;
+window.addTypeSeance = addTypeSeance;
+window.editTypeSeance = editTypeSeance;
+window.cancelTypeEdit = cancelTypeEdit;
+window.removeTypeSeance = removeTypeSeance;
+window.triggerManualBackup = triggerManualBackup;
+window.checkBackupReminder = checkBackupReminder;
+window.importBackup = importBackup;
+window.browseBackupFolder = browseBackupFolder;
+window.resetBackupFolder = resetBackupFolder;
+window.checkUpdate = checkUpdate;
+window.applyUpdate = applyUpdate;
+window.checkUpdateReminder = checkUpdateReminder;
+window.handleLogoUpload = handleLogoUpload;
+window.removeLogo = removeLogo;
+window.handleSignatureUpload = handleSignatureUpload;
+window.removeSignature = removeSignature;
+window.validateSmtpEmail = validateSmtpEmail;
+window.testSmtpConfig = testSmtpConfig;

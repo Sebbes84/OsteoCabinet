@@ -1,6 +1,7 @@
 /* ============================================================
    BILLING.JS — Gestion de la facturation
    ============================================================ */
+console.log("Loading billing.js...");
 
 // ID de la facture actuellement affichée dans le modal aperçu
 let _currentPreviewFactureId = null;
@@ -115,7 +116,7 @@ function openFactureModal(id, prePatientId, preSeanceIds) {
 
 function updateFactureModalButtons(isDirty = false) {
   const fId = document.getElementById('factureId').value;
-  const btnApercu = document.getElementById('btnAperçuFactureModal');
+  const btnApercu = document.getElementById('btnPreviewFactureModal');
   const btnSave = document.getElementById('btnSaveFacture');
 
   if (fId && !isDirty) {
@@ -535,6 +536,12 @@ async function sendFactureAuto() {
   const body = document.getElementById('emailBody').value.trim();
 
   if (!to) { showToast('Veuillez saisir l\'adresse email du destinataire.', 'error'); return; }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(to)) {
+    showToast('Veuillez saisir une adresse email valide pour le destinataire.', 'error');
+    document.getElementById('emailTo').focus();
+    return;
+  }
 
   const btn = document.getElementById('btnSendEmailAuto');
   const oldText = btn.innerHTML;
@@ -614,6 +621,12 @@ function sendFactureByGmail() {
   const body = document.getElementById('emailBody').value.trim();
 
   if (!to) { showToast('Veuillez saisir l\'adresse email du destinataire.', 'error'); return; }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(to)) {
+    showToast('Veuillez saisir une adresse email valide pour le destinataire.', 'error');
+    document.getElementById('emailTo').focus();
+    return;
+  }
 
   const params = new URLSearchParams({
     view: 'cm',
@@ -765,3 +778,15 @@ function downloadFacturePDF() {
       showToast("Erreur lors de la génération du PDF.", "error");
     });
 }
+
+// Fin du fichier - Export global explicite
+window.sendFactureAuto = sendFactureAuto;
+window.sendFactureByGmail = sendFactureByGmail;
+window.openFactureModal = openFactureModal;
+window.previewFacture = previewFacture;
+window.saveFacture = saveFacture;
+window.markFacturePayee = markFacturePayee;
+window.deleteFacture = deleteFacture;
+window.downloadFacturePDF = downloadFacturePDF;
+window.printFacture = printFacture;
+window.openEmailModal = openEmailModal;

@@ -578,6 +578,22 @@ body.light-mode .app-version {
   color: var(--warning);
 }
 
+/* Blur effect for revenue privacy */
+.blur-content {
+  filter: blur(10px);
+  transition: filter 0.3s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.blur-content.unblur {
+  filter: blur(0);
+}
+
+.blur-content:hover:not(.unblur) {
+  filter: blur(6px);
+}
+
 /* ===== DASHBOARD TOOLBAR ===== */
 .dashboard-toolbar {
   display: flex;

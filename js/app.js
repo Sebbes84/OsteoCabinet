@@ -320,7 +320,12 @@ function renderDashboard() {
     const caPeriod = seancesPeriod
         .filter(s => s.statut === 'realisee')
         .reduce((sum, s) => sum + (parseFloat(s.montant) || 0), 0);
-    document.getElementById('statCAMois').textContent = formatMontant(caPeriod);
+    const caEl = document.getElementById('statCAMois');
+    if (caEl) {
+        caEl.textContent = formatMontant(caPeriod);
+        caEl.classList.add('blur-content');
+        caEl.classList.remove('unblur');
+    }
 
     // Prochaines séances / Derniers patients
     const toggleDash = document.getElementById('dashSeancesToggle');
@@ -666,3 +671,19 @@ async function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// Fin du fichier - Export global explicite
+window.showPage = showPage;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.showToast = showToast;
+window.renderDashboard = renderDashboard;
+window.setDashboardPeriod = setDashboardPeriod;
+window.onDashboardDateManualChange = onDashboardDateManualChange;
+window.formatMontant = formatMontant;
+window.formatDate = formatDate;
+window.formatDateLong = formatDateLong;
+window.getPatientName = getPatientName;
+window.formatNom = formatNom;
+window.formatPrenom = formatPrenom;
+window.getTodayStr = getTodayStr;

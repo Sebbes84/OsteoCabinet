@@ -25,6 +25,7 @@
                     Sentry.init({
                         dsn: "https://1cd09dcbc4d3018d189c2bb1a2483d31@o4511014108856320.ingest.de.sentry.io/4511014120521808",
                         release: "osteocabinet@" + (data.version || "inconnue"),
+                        environment: "production",
                         // Activation explicite du monitoring des sessions (pour les statistiques de version sans bugs)
                         autoSessionTracking: true,
                     });
@@ -32,6 +33,7 @@
                 .catch(err => {
                     Sentry.init({
                         dsn: "https://1cd09dcbc4d3018d189c2bb1a2483d31@o4511014108856320.ingest.de.sentry.io/4511014120521808",
+                        environment: "production",
                         autoSessionTracking: true,
                     });
                 });
@@ -168,7 +170,7 @@
                     <div class="stat-card accent-amber">
                         <div class="stat-icon">💶</div>
                         <div class="stat-info">
-                            <div class="stat-value" id="statCAMois">0 €</div>
+                            <div class="stat-value blur-content" id="statCAMois" onclick="this.classList.toggle('unblur')">0 €</div>
                             <div class="stat-label" id="labelCAPeriod">CA sur la période</div>
                         </div>
                     </div>
@@ -629,7 +631,7 @@
                                         <div class="form-group mt-8">
                                             <label class="label-sm">Adresse Gmail</label>
                                             <input type="email" id="settingSmtpEmail" class="form-control"
-                                                placeholder="votre.email@gmail.com">
+                                                placeholder="votre.email@gmail.com" onblur="validateSmtpEmail()">
                                         </div>
                                         <div class="form-group mb-0">
                                             <label class="label-sm">Mot de passe d'application</label>
@@ -638,6 +640,13 @@
                                             <small class="text-muted">Générez ce code dans votre compte Google
                                                 (Validation
                                                 en 2 étapes requise).</small>
+                                        </div>
+                                        <div class="mt-8" style="display:flex; gap:10px; align-items:center;">
+                                            <button type="button" class="btn btn-sm btn-outline" id="btnTestSmtp" onclick="testSmtpConfig()">
+                                                🧪 Tester la configuration
+                                            </button>
+                                            <div id="smtpTestLog" style="flex:1; font-size:11px; font-family:monospace; padding:8px; background:var(--bg-card2); border:1px solid var(--border); border-radius:6px; min-height:10px; display:none; max-height:80px; overflow-y:auto; color:var(--text-muted);">
+                                            </div>
                                         </div>
                                         <div
                                             style="margin-top: 12px; padding: 12px; background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.2); border-radius: 8px; font-size: 12px; color: #856404; line-height: 1.6;">
@@ -1114,7 +1123,7 @@ Cordialement,
             </div>
             <div class="modal-footer">
                 <div class="modal-footer-left">
-                    <button id="btnAperçuFactureModal" class="btn btn-outline" style="display:none;" onclick="previewFacture(document.getElementById('factureId').value)">👁 Aperçu de la facture</button>
+                    <button id="btnPreviewFactureModal" class="btn btn-outline" style="display:none;" onclick="previewFacture(document.getElementById('factureId').value)">👁 Aperçu de la facture</button>
                 </div>
                 <div class="modal-footer-right">
                     <button class="btn btn-secondary" onclick="closeModal('modalFacture')">Fermer</button>

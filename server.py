@@ -254,6 +254,10 @@ class OsteoHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_send_email()
             return
 
+        if collection == "test-smtp":
+            self.handle_test_smtp()
+            return
+
         if collection == "apply-update":
             try:
                 import urllib.request
@@ -562,6 +566,84 @@ class OsteoHandler(http.server.SimpleHTTPRequestHandler):
             error_msg = str(e)
             print(f"Erreur envoi email: {error_msg}")
             self.send_json(500, {"error": f"Erreur lors de l'envoi : {error_msg}"})
+
+    def handle_test_smtp(self):
+        try:
+            body = self.read_body()
+            to_email = body.get("to")
+            if not to_email:
+                self.send_json(400, {"error": "Adresse email de destination manquante."})
+                return
+
+            print(f"--- TEST SMTP ---")
+            print(f"Destinataire : {to_email}")
+
+            conn = get_db()
+            row = conn.execute("SELECT data FROM settings WHERE id = 1").fetchone()
+            raw_settings = row[0] if row else "{}"
+            settings = json.loads(raw_settings)
+            conn.close()
+
+            smtp_user = settings.get("smtpEmail")
+            smtp_pass = settings.get("smtpPassword")
+            
+            if not smtp_user or not smtp_pass:
+                print("Erreur : Paramètres SMTP non configurés.")
+                self.send_json(400, {"error": "Paramètres SMTP non configurés en base de données."})
+                return
+
+            print(f"Expéditeur : {smtp_user}")
+            
+            msg = MIMEMultipart()
+            msg['From'] = smtp_user
+            msg['To'] = to_email
+            msg['Subject'] = "OstéoCabinet - Test de configuration SMTP"
+            
+            body_text = f"Ceci est un email de test envoyé par OstéoCabinet.\n\n" \
+                        f"Si vous recevez ce message, votre configuration SMTP pour {smtp_user} est correcte.\n\n" \
+                        f"Date du test : {time.strftime('%Y-%m-%d %H:%M:%S')}"
+            msg.attach(MIMEText(body_text, 'plain'))
+
+            preferred_port = settings.get("preferredSmtpPort", 587)
+            
+            def try_send(port):
+                if port == 465:
+                    print(f"Tentative de connexion SMTP_SSL (465)...")
+                    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+                        server.login(smtp_user, smtp_pass)
+                        server.send_message(msg)
+                    return True
+                else:
+                    print(f"Tentative de connexion SMTP STARTTLS (587)...")
+                    with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
+                        # server.set_debuglevel(1)
+                        server.starttls()
+                        server.login(smtp_user, smtp_pass)
+                        server.send_message(msg)
+                    return True
+
+            try:
+                try_send(preferred_port)
+                self.send_json(200, {"status": "success", "message": f"Succès via le port {preferred_port}"})
+            except Exception as e_pref:
+                print(f"Échec port {preferred_port}: {e_pref}")
+                other_port = 465 if preferred_port == 587 else 587
+                try:
+                    try_send(other_port)
+                    # Update database with working port
+                    settings["preferredSmtpPort"] = other_port
+                    conn = get_db()
+                    conn.execute("UPDATE settings SET data = ? WHERE id = 1", (json.dumps(settings),))
+                    conn.commit()
+                    conn.close()
+                    self.send_json(200, {"status": "success", "message": f"Succès via le port {other_port} (mis à jour)"})
+                except Exception as e_alt:
+                    print(f"Échec total: {e_alt}")
+                    self.send_json(500, {"error": f"Échec de connexion SMTP: {str(e_alt)}"})
+
+        except Exception as e:
+            print(f"Erreur test SMTP: {e}")
+            self.send_json(500, {"error": str(e)})
 
     def handle_upload_image(self):
         try:

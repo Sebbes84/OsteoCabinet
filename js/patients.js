@@ -505,17 +505,13 @@ function savePatient() {
 }
 
 // ===== DELETE PATIENT =====
-function deletePatient(id) {
-  const p = DB.getPatientById(id);
-  if (!p) return;
-  if (!confirm(`Supprimer le patient ${getPatientName(id)} ? Cette action est irréversible.`)) return;
-  DB.deletePatient(id);
-  showToast('Patient supprimé.', 'info');
-  renderPatients();
-  renderSeances();
-  renderPlanning();
-  renderDashboard();
-  populatePatientSelects();
+function triggerPatientDelete(id) {
+    if (!confirm('Supprimer ce patient et toutes ses données (séances, factures) ?')) return;
+    DB.deletePatient(id);
+    showToast('Patient supprimé.', 'info');
+    renderPatients();
+    renderDashboard();
+    closeModal('modalPatient');
 }
 
 // ===== SHOW PATIENT SEANCES =====
@@ -730,3 +726,19 @@ function toggleNoteImportanteStyle(el) {
     el.classList.remove('note-importante-filled');
   }
 }
+
+// Fin du fichier - Export global explicite
+window.renderPatients = renderPatients;
+window.openPatientModal = openPatientModal;
+window.savePatient = savePatient;
+window.deletePatient = deletePatient;
+window.refreshPatientModal = refreshPatientModal;
+window.setAcValue = setAcValue;
+window.calcAge = calcAge;
+window.relativeDuration = relativeDuration;
+window.jumpToLetter = jumpToLetter;
+window.initAlphabetIndex = initAlphabetIndex;
+window.initAddressAutocomplete = initAddressAutocomplete;
+window.selectFullAddress = selectFullAddress;
+window.selectCityOnly = selectCityOnly;
+window.toggleNoteImportanteStyle = toggleNoteImportanteStyle;

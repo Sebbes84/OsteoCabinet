@@ -471,3 +471,18 @@ function updateSeanceNoteImportante(patientId) {
         container.style.display = 'none';
     }
 }
+
+// Fin du fichier - Export global explicite
+window.renderSeances = renderSeances;
+window.openSeanceModal = openSeanceModal;
+window.saveSeance = saveSeance;
+window.deleteSeance = deleteSeance;
+window.deleteSeanceFromModal = deleteSeanceFromModal;
+window.markSeanceRealisee = markSeanceRealisee;
+window.setSeanceStatus = setSeanceStatus;
+window.onSeanceFormChange = onSeanceFormChange;
+window.openFactureFromSeance = openFactureFromSeance;
+window.facturerSeanceFromModal = facturerSeanceFromModal;
+window.updateSeanceNoteImportante = updateSeanceNoteImportante;
+window.renderMoreSeances = renderMoreSeances;
+window.handleSeancesScroll = handleSeancesScroll;
