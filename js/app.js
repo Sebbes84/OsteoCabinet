@@ -52,7 +52,7 @@ function initGlobalAutocomplete(inputId, getValuesFn) {
         if (uniqueValues.length > 0) {
             dropdown.innerHTML = uniqueValues.map(v => {
                 const escaped = v.replace(/'/g, "\\'").replace(/\n/g, "\\n");
-                return `<div class="ac-item" onclick="const el=document.getElementById('${inputId}'); el.value = '${escaped}'; el.dispatchEvent(new Event('input')); this.parentNode.style.display='none';">
+                return `<div class="ac-item" onclick="const dropdown=this.parentNode; if(dropdown) dropdown.style.display='none'; const el=document.getElementById('${inputId}'); el.value = '${escaped}'; el.dispatchEvent(new Event('input'));">
             <span class="ac-name">${v}</span>
           </div>`;
             }).join('');
@@ -625,12 +625,13 @@ async function init() {
 
     initGlobalAutocomplete('patientProfession', () => pData().map(p => p.profession));
     initGlobalAutocomplete('patientMedecin', () => pData().map(p => p.medecin));
-    initGlobalAutocomplete('patientMotif', () => pData().map(p => p.motif));
+    initGlobalAutocomplete('patientSituationPro', () => pData().map(p => p.situationPro));
+    initGlobalAutocomplete('patientGyneco', () => pData().map(p => p.gyneco));
     initGlobalAutocomplete('patientAntecedentsMedicaux', () => pData().map(p => p.antecedentsMedicaux));
-    initGlobalAutocomplete('patientAntecedentsTrauma', () => pData().map(p => p.antecedentsTrauma));
+    initGlobalAutocomplete('patientSport', () => pData().map(p => p.sport));
     initGlobalAutocomplete('patientAllergies', () => pData().map(p => p.allergies));
-    initGlobalAutocomplete('patientTraitements', () => pData().map(p => p.traitements));
-    initGlobalAutocomplete('patientContraIndications', () => pData().map(p => p.contraIndications));
+    initGlobalAutocomplete('patientChirurgie', () => pData().map(p => p.chirurgie));
+    initGlobalAutocomplete('patientDigestif', () => pData().map(p => p.digestif));
 
     // Séances
     const getAllMotifs = () => {

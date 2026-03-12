@@ -243,7 +243,7 @@ function calcAge(dateNaissance) {
 function openPatientModal(id) {
   // Reset form
   document.getElementById('patientId').value = '';
-  const fields = ['Nom', 'Prenom', 'DateNaissance', 'Sexe', 'Nss', 'Lateralite', 'Adresse', 'CodePostal', 'Ville', 'Telephone', 'Email', 'Medecin', 'Profession', 'Mutuelle', 'Orientation', 'Notes', 'NoteImportante', 'Motif', 'AntecedentsMedicaux', 'AntecedentsTrauma', 'Allergies', 'Traitements', 'ContraIndications'];
+  const fields = ['Nom', 'Prenom', 'DateNaissance', 'Sexe', 'Nss', 'Lateralite', 'Adresse', 'CodePostal', 'Ville', 'Telephone', 'Email', 'Medecin', 'Profession', 'SituationPro', 'Orientation', 'Notes', 'NoteImportante', 'Gyneco', 'AntecedentsMedicaux', 'Sport', 'Allergies', 'Chirurgie', 'Digestif'];
   fields.forEach(f => {
     const el = document.getElementById('patient' + f);
     if (el) {
@@ -280,22 +280,22 @@ function openPatientModal(id) {
     document.getElementById('patientVille').value = p.ville || '';
     document.getElementById('patientTelephone').value = p.telephone || '';
     document.getElementById('patientEmail').value = p.email || '';
-    document.getElementById('patientMedecin').value = p.medecin || '';
-    document.getElementById('patientProfession').value = p.profession || '';
-    document.getElementById('patientMutuelle').value = p.mutuelle || '';
-    document.getElementById('patientOrientation').value = p.orientation || '';
-    document.getElementById('patientNotes').value = p.notes || '';
+    if (document.getElementById('patientMedecin')) document.getElementById('patientMedecin').value = p.medecin || '';
+    if (document.getElementById('patientProfession')) document.getElementById('patientProfession').value = p.profession || '';
+    if (document.getElementById('patientSituationPro')) document.getElementById('patientSituationPro').value = p.situationPro || p.mutuelle || '';
+    if (document.getElementById('patientOrientation')) document.getElementById('patientOrientation').value = p.orientation || '';
+    if (document.getElementById('patientNotes')) document.getElementById('patientNotes').value = p.notes || '';
     const noteImp = document.getElementById('patientNoteImportante');
     if (noteImp) {
       noteImp.value = p.noteImportante || '';
       toggleNoteImportanteStyle(noteImp);
     }
-    document.getElementById('patientMotif').value = p.motif || '';
-    document.getElementById('patientAntecedentsMedicaux').value = p.antecedentsMedicaux || '';
-    document.getElementById('patientAntecedentsTrauma').value = p.antecedentsTrauma || '';
-    document.getElementById('patientAllergies').value = p.allergies || '';
-    document.getElementById('patientTraitements').value = p.traitements || '';
-    document.getElementById('patientContraIndications').value = p.contraIndications || '';
+    if (document.getElementById('patientGyneco')) document.getElementById('patientGyneco').value = p.gyneco || p.motif || '';
+    if (document.getElementById('patientAntecedentsMedicaux')) document.getElementById('patientAntecedentsMedicaux').value = p.antecedentsMedicaux || '';
+    if (document.getElementById('patientSport')) document.getElementById('patientSport').value = p.sport || p.antecedentsTrauma || '';
+    if (document.getElementById('patientAllergies')) document.getElementById('patientAllergies').value = p.allergies || '';
+    if (document.getElementById('patientChirurgie')) document.getElementById('patientChirurgie').value = p.chirurgie || p.traitements || '';
+    if (document.getElementById('patientDigestif')) document.getElementById('patientDigestif').value = p.digestif || p.contraIndications || '';
 
     // ── Barre de résumé ──
     const seances = DB.getSeancesByPatient(id).filter(s => s.statut === 'realisee');
@@ -463,16 +463,16 @@ function savePatient() {
     email: document.getElementById('patientEmail')?.value.trim() || '',
     medecin: document.getElementById('patientMedecin')?.value.trim() || '',
     profession: document.getElementById('patientProfession')?.value.trim() || '',
-    mutuelle: document.getElementById('patientMutuelle')?.value.trim() || '',
+    situationPro: document.getElementById('patientSituationPro')?.value.trim() || '',
     orientation: document.getElementById('patientOrientation')?.value.trim() || '',
     notes: document.getElementById('patientNotes')?.value.trim() || '',
     noteImportante: document.getElementById('patientNoteImportante')?.value.trim() || '',
-    motif: document.getElementById('patientMotif')?.value.trim() || '',
+    gyneco: document.getElementById('patientGyneco')?.value.trim() || '',
     antecedentsMedicaux: document.getElementById('patientAntecedentsMedicaux')?.value.trim() || '',
-    antecedentsTrauma: document.getElementById('patientAntecedentsTrauma')?.value.trim() || '',
+    sport: document.getElementById('patientSport')?.value.trim() || '',
     allergies: document.getElementById('patientAllergies')?.value.trim() || '',
-    traitements: document.getElementById('patientTraitements')?.value.trim() || '',
-    contraIndications: document.getElementById('patientContraIndications')?.value.trim() || '',
+    chirurgie: document.getElementById('patientChirurgie')?.value.trim() || '',
+    digestif: document.getElementById('patientDigestif')?.value.trim() || '',
   };
 
   if (data.id) {

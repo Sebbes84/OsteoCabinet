@@ -376,7 +376,7 @@ function checkBackupReminder() {
                         <button class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.4);" onclick="triggerManualBackup()">
                             Sauvegarder maintenant
                         </button>
-                        <button class="btn btn-sm btn-outline" style="color:white; border-color:rgba(255,255,255,0.5);" onclick="this.closest('.global-alert').remove()">
+                        <button class="btn btn-sm btn-outline" style="color:white; border-color:rgba(255,255,255,0.5);" onclick="const alert = this.closest('.global-alert'); if(alert) alert.remove()">
                             Plus tard
                         </button>
                     </div>

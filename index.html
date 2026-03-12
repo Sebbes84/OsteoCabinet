@@ -25,7 +25,7 @@
                     Sentry.init({
                         dsn: "https://1cd09dcbc4d3018d189c2bb1a2483d31@o4511014108856320.ingest.de.sentry.io/4511014120521808",
                         release: "osteocabinet@" + (data.version || "inconnue"),
-                        environment: "production",
+                        environment: "test",
                         // Activation explicite du monitoring des sessions (pour les statistiques de version sans bugs)
                         autoSessionTracking: true,
                     });
@@ -33,7 +33,7 @@
                 .catch(err => {
                     Sentry.init({
                         dsn: "https://1cd09dcbc4d3018d189c2bb1a2483d31@o4511014108856320.ingest.de.sentry.io/4511014120521808",
-                        environment: "production",
+                        environment: "test",
                         autoSessionTracking: true,
                     });
                 });
@@ -893,7 +893,7 @@ Cordialement,
                     </div>
                     <div class="form-group">
                         <label>Situation professionnelle</label>
-                        <input type="text" id="patientMutuelle" class="form-control" list="sitProfList"
+                        <input type="text" id="patientSituationPro" class="form-control" list="sitProfList"
                             placeholder="Actif, retraité, sans emploi…">
                         <datalist id="sitProfList">
                             <option value="Actif/active">
@@ -924,24 +924,24 @@ Cordialement,
                         <textarea id="patientAntecedentsMedicaux" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label>allergie</label>
+                        <label>Allergie(s)</label>
                         <textarea id="patientAllergies" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Chirurgie</label>
-                        <textarea id="patientTraitements" class="form-control" rows="2"></textarea>
+                        <label>Chirurgie(s)</label>
+                        <textarea id="patientChirurgie" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Digestif</label>
-                        <textarea id="patientContraIndications" class="form-control" rows="2"></textarea>
+                        <textarea id="patientDigestif" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Sport</label>
-                        <textarea id="patientAntecedentsTrauma" class="form-control" rows="2"></textarea>
+                        <textarea id="patientSport" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Gynécologique</label>
-                        <textarea id="patientMotif" class="form-control" rows="2"></textarea>
+                        <textarea id="patientGyneco" class="form-control" rows="2"></textarea>
                     </div>
                 </div>
                 <div id="tabSeancesPatient" class="tab-content">
