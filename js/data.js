@@ -181,6 +181,82 @@ const DB = {
     },
 
     // ─── NUMÉRO FACTURE ─────────────────────────────────────────
+    isFactureNumeroAvailable(numero, excludeId) {
+        return !(_cache.factures || []).some(f => f.numero === numero && f.id !== excludeId);
+    },
+
+    getFactureNumeroSuggestions(dateStr) {
+        const settings = this.getSettings();
+        let format = settings.factureFormat || settings.facturePrefix || 'FACT-YYYY-######';
+
+        const dateObj = dateStr ? new Date(dateStr) : new Date();
+        const yearFull = dateObj.getFullYear();
+        const yearShort = String(yearFull).substring(2);
+
+        format = format.replace('YYYY', yearFull);
+        format = format.replace('YY', yearShort);
+
+        const hashMatch = format.match(/#+/);
+        if (!hashMatch) return [this.getNextFactureNum(dateStr)];
+
+        const hashes = hashMatch[0];
+        const padding = hashes.length;
+        const prefixPart = format.substring(0, hashMatch.index);
+        const suffixPart = format.substring(hashMatch.index + padding);
+
+        const escapeRegex = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const regex = new RegExp('^' + escapeRegex(prefixPart) + '(\\d+)' + escapeRegex(suffixPart) + '$');
+
+        const nums = (_cache.factures || [])
+            .map(f => {
+                const m = (f.numero || '').match(regex);
+                return m ? parseInt(m[1], 10) : null;
+            })
+            .filter(n => n !== null)
+            .sort((a, b) => a - b);
+
+        const suggestions = [];
+        const nextNum = (nums.length > 0 ? nums[nums.length - 1] : 0) + 1;
+        
+        // 1. Suggest next sequential
+        suggestions.push({
+            number: prefixPart + String(nextNum).padStart(padding, '0') + suffixPart,
+            type: 'next'
+        });
+        const nextNumStr = suggestions[0].number;
+
+        // 2. Suggest gaps
+        if (nums.length > 0) {
+            const max = nums[nums.length - 1];
+            const existingSet = new Set(nums);
+            
+            for (let i = 1; i < max; i++) {
+                if (!existingSet.has(i)) {
+                    const numStr = prefixPart + String(i).padStart(padding, '0') + suffixPart;
+                    if (numStr !== nextNumStr) {
+                        suggestions.push({
+                            number: numStr,
+                            type: 'gap'
+                        });
+                    }
+                    if (suggestions.length >= 6) break; // Limit suggestions
+                }
+            }
+        }
+
+        // Remove duplicates and keep types
+        const unique = [];
+        const seen = new Set();
+        for (const s of suggestions) {
+            if (!seen.has(s.number)) {
+                seen.add(s.number);
+                unique.push(s);
+            }
+        }
+
+        return unique.slice(0, 5);
+    },
+
     getNextFactureNum(dateStr) {
         const settings = this.getSettings();
         let format = settings.factureFormat || settings.facturePrefix || 'FACT-YYYY-######';
