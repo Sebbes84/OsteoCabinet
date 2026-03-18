@@ -182,48 +182,72 @@ const DB = {
 
     // ─── NUMÉRO FACTURE ─────────────────────────────────────────
     getNextFactureNum(dateStr) {
+        const suggestions = this.getFactureNumSuggestions(dateStr);
+        return suggestions.next;
+    },
+
+    /**
+     * Vérifie si un numéro de facture existe déjà
+     */
+    isFactureNumDuplicate(numero, excludeId) {
+        if (!numero) return false;
+        return (_cache.factures || []).some(f => f.numero === numero && f.id !== excludeId);
+    },
+
+    /**
+     * Retourne des suggestions pour le numéro de facture (prochain et trous)
+     */
+    getFactureNumSuggestions(dateStr) {
         const settings = this.getSettings();
         let format = settings.factureFormat || settings.facturePrefix || 'FACT-YYYY-######';
 
-        // Remplacer l'année basée sur la date fournie ou la date actuelle
         const dateObj = dateStr ? new Date(dateStr) : new Date();
         const yearFull = dateObj.getFullYear();
         const yearShort = String(yearFull).substring(2);
 
-        format = format.replace('YYYY', yearFull);
-        format = format.replace('YY', yearShort);
+        format = format.replace('YYYY', yearFull).replace('YY', yearShort);
 
-        // Identifier le bloc de # (le compteur)
         const hashMatch = format.match(/#+/);
-        if (!hashMatch) {
-            // Fallback si pas de # défini : on ajoute simplement un numéro
-            const factures = this.getFactures();
-            return format + (factures.length + 1);
-        }
+        if (!hashMatch) return { next: null, holes: [] };
 
         const hashes = hashMatch[0];
         const padding = hashes.length;
         const prefixPart = format.substring(0, hashMatch.index);
         const suffixPart = format.substring(hashMatch.index + padding);
 
-        // Regex pour extraire le numéro existant basé sur ce format
         const escapeRegex = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
         const regex = new RegExp('^' + escapeRegex(prefixPart) + '(\\d+)' + escapeRegex(suffixPart) + '$');
 
-        const factures = this.getFactures();
-        let maxNum = 0;
-
-        factures.forEach(f => {
+        const nums = [];
+        (_cache.factures || []).forEach(f => {
             const match = (f.numero || '').match(regex);
             if (match) {
-                const num = parseInt(match[1], 10);
-                if (!isNaN(num) && num > maxNum) maxNum = num;
+                nums.push(parseInt(match[1], 10));
             }
         });
 
-        const nextNum = maxNum + 1;
-        const paddedNum = String(nextNum).padStart(padding, '0');
+        if (nums.length === 0) {
+            return {
+                next: prefixPart + "1".padStart(padding, '0') + suffixPart,
+                holes: []
+            };
+        }
 
-        return prefixPart + paddedNum + suffixPart;
+        nums.sort((a, b) => a - b);
+        const max = nums[nums.length - 1];
+        const numSet = new Set(nums);
+        const holes = [];
+
+        // On cherche les trous de 1 jusqu'au max
+        for (let i = 1; i < max; i++) {
+            if (!numSet.has(i)) {
+                holes.push(prefixPart + String(i).padStart(padding, '0') + suffixPart);
+            }
+        }
+
+        return {
+            next: prefixPart + String(max + 1).padStart(padding, '0') + suffixPart,
+            holes: holes
+        };
     }
 };

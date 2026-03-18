@@ -1082,8 +1082,9 @@ Cordialement,
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>N° Facture</label>
-                        <input type="text" id="factureNumero" class="form-control" readonly>
+                        <label id="labelFactureNumero">N° Facture</label>
+                        <input type="text" id="factureNumero" class="form-control" readonly list="factureNumSuggestions">
+                        <datalist id="factureNumSuggestions"></datalist>
                     </div>
                     <div class="form-group">
                         <label>Date</label>

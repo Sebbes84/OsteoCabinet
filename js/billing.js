@@ -111,6 +111,7 @@ function openFactureModal(id, prePatientId, preSeanceIds) {
   }
 
   openModal('modalFacture');
+  initFactureNumSecretMode(); // Initialiser le mode secret à chaque ouverture
   updateFactureModalButtons();
 }
 
@@ -139,8 +140,8 @@ function onFactureFormChange() {
 // ===== REFRESH NUMERO DE FACTURE =====
 function refreshFactureNum() {
   const fId = document.getElementById('factureId').value;
-  // On ne change le numéro que pour une nouvelle facture
-  if (fId) return;
+  // On ne change le numéro que pour une nouvelle facture (sauf si mode secret)
+  if (fId && !_factureNumSecretMode) return;
 
   const dateStr = document.getElementById('factureDate').value;
   if (!dateStr) return;
@@ -148,6 +149,59 @@ function refreshFactureNum() {
   const nextNum = DB.getNextFactureNum(dateStr);
   document.getElementById('factureNumero').value = nextNum;
   console.log("Facture number refreshed for date:", dateStr, "->", nextNum);
+
+  if (_factureNumSecretMode) {
+    refreshFactureNumSuggestions();
+  }
+}
+
+// ===== MODE SECRET NUMÉRO DE FACTURE =====
+let _factureNumSecretMode = false;
+
+function initFactureNumSecretMode() {
+    const input = document.getElementById('factureNumero');
+    if (!input) return;
+
+    _factureNumSecretMode = false;
+    input.readOnly = true;
+
+    const handler = (e) => {
+        if (e.detail === 3) { // Triple clic
+            enableFactureNumEdit();
+        }
+    };
+    input.onclick = handler;
+}
+
+function enableFactureNumEdit() {
+    const input = document.getElementById('factureNumero');
+    if (!input) return;
+
+    _factureNumSecretMode = true;
+    input.readOnly = false;
+    input.focus();
+    showToast('Mode édition numéro de facture activé.', 'info');
+
+    refreshFactureNumSuggestions();
+}
+
+function refreshFactureNumSuggestions() {
+    const dateStr = document.getElementById('factureDate').value;
+    const suggestions = DB.getFactureNumSuggestions(dateStr);
+    const datalist = document.getElementById('factureNumSuggestions');
+    if (!datalist) return;
+
+    let html = '';
+    if (suggestions.next) {
+        html += `<option value="${suggestions.next}">Prochain : ${suggestions.next}</option>`;
+    }
+    if (suggestions.holes && suggestions.holes.length > 0) {
+        // Inverser pour avoir les plus récents en premier (généralement ce qu'on cherche)
+        [...suggestions.holes].reverse().forEach(h => {
+            html += `<option value="${h}">Trou : ${h}</option>`;
+        });
+    }
+    datalist.innerHTML = html;
 }
 
 // ===== SET FACTURE STATUS (via buttons) =====
@@ -266,6 +320,18 @@ function saveFacture() {
     statut: document.getElementById('factureStatut').value,
     notes: document.getElementById('factureNotes').value.trim(),
   };
+
+  // Vérification des doublons sur le numéro de facture
+  if (DB.isFactureNumDuplicate(data.numero, data.id)) {
+    showToast(`Le numéro de facture "${data.numero}" est déjà utilisé par une autre facture.`, 'error');
+    const input = document.getElementById('factureNumero');
+    if (input) {
+      input.classList.add('error-shake');
+      setTimeout(() => input.classList.remove('error-shake'), 500);
+      input.focus();
+    }
+    return;
+  }
 
   if (data.id) {
     const result = DB.updateFacture(data);
