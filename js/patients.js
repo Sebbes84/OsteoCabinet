@@ -282,6 +282,7 @@ function openPatientModal(id) {
     document.getElementById('patientEmail').value = p.email || '';
     if (document.getElementById('patientMedecin')) document.getElementById('patientMedecin').value = p.medecin || '';
     if (document.getElementById('patientProfession')) document.getElementById('patientProfession').value = p.profession || '';
+    if (document.getElementById('patientSituationPro')) document.getElementById('patientSituationPro').value = p.situationPro || p.mutuelle || '';
     if (document.getElementById('patientOrientation')) document.getElementById('patientOrientation').value = p.orientation || '';
     if (document.getElementById('patientNotes')) document.getElementById('patientNotes').value = p.notes || '';
     const noteImp = document.getElementById('patientNoteImportante');
@@ -289,29 +290,12 @@ function openPatientModal(id) {
       noteImp.value = p.noteImportante || '';
       toggleNoteImportanteStyle(noteImp);
     }
-    // --- Logique de Fallback (Compatibilité 1.0.7 -> 1.0.9) ---
-    // On n'affiche l'ancienne donnée que si la nouvelle est strictement absente (null/undefined)
-    if (document.getElementById('patientSituationPro')) {
-        document.getElementById('patientSituationPro').value = (p.situationPro !== null && p.situationPro !== undefined) ? p.situationPro : (p.mutuelle || '');
-    }
-    if (document.getElementById('patientGyneco')) {
-        document.getElementById('patientGyneco').value = (p.gyneco !== null && p.gyneco !== undefined) ? p.gyneco : (p.motif || '');
-    }
-    if (document.getElementById('patientAntecedentsMedicaux')) {
-        document.getElementById('patientAntecedentsMedicaux').value = p.antecedentsMedicaux || '';
-    }
-    if (document.getElementById('patientSport')) {
-        document.getElementById('patientSport').value = (p.sport !== null && p.sport !== undefined) ? p.sport : (p.antecedentsTrauma || '');
-    }
-    if (document.getElementById('patientAllergies')) {
-        document.getElementById('patientAllergies').value = p.allergies || '';
-    }
-    if (document.getElementById('patientChirurgie')) {
-        document.getElementById('patientChirurgie').value = (p.chirurgie !== null && p.chirurgie !== undefined) ? p.chirurgie : (p.traitements || '');
-    }
-    if (document.getElementById('patientDigestif')) {
-        document.getElementById('patientDigestif').value = (p.digestif !== null && p.digestif !== undefined) ? p.digestif : (p.contraIndications || '');
-    }
+    if (document.getElementById('patientGyneco')) document.getElementById('patientGyneco').value = p.gyneco || p.motif || '';
+    if (document.getElementById('patientAntecedentsMedicaux')) document.getElementById('patientAntecedentsMedicaux').value = p.antecedentsMedicaux || '';
+    if (document.getElementById('patientSport')) document.getElementById('patientSport').value = p.sport || p.antecedentsTrauma || '';
+    if (document.getElementById('patientAllergies')) document.getElementById('patientAllergies').value = p.allergies || '';
+    if (document.getElementById('patientChirurgie')) document.getElementById('patientChirurgie').value = p.chirurgie || p.traitements || '';
+    if (document.getElementById('patientDigestif')) document.getElementById('patientDigestif').value = p.digestif || p.contraIndications || '';
 
     // ── Barre de résumé ──
     const seances = DB.getSeancesByPatient(id).filter(s => s.statut === 'realisee');
@@ -490,8 +474,6 @@ function savePatient() {
     chirurgie: document.getElementById('patientChirurgie')?.value.trim() || '',
     digestif: document.getElementById('patientDigestif')?.value.trim() || '',
   };
-
-  console.log("Saving patient data:", data);
 
   if (data.id) {
     DB.updatePatient(data);

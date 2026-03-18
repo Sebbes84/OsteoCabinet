@@ -111,8 +111,8 @@ function openFactureModal(id, prePatientId, preSeanceIds) {
   }
 
   openModal('modalFacture');
-  initFactureNumSecretMode(); // Initialiser le mode secret à chaque ouverture
   updateFactureModalButtons();
+  initFactureSecretMode();
 }
 
 function updateFactureModalButtons(isDirty = false) {
@@ -140,8 +140,8 @@ function onFactureFormChange() {
 // ===== REFRESH NUMERO DE FACTURE =====
 function refreshFactureNum() {
   const fId = document.getElementById('factureId').value;
-  // On ne change le numéro que pour une nouvelle facture (sauf si mode secret)
-  if (fId && !_factureNumSecretMode) return;
+  // On ne change le numéro que pour une nouvelle facture
+  if (fId) return;
 
   const dateStr = document.getElementById('factureDate').value;
   if (!dateStr) return;
@@ -149,59 +149,162 @@ function refreshFactureNum() {
   const nextNum = DB.getNextFactureNum(dateStr);
   document.getElementById('factureNumero').value = nextNum;
   console.log("Facture number refreshed for date:", dateStr, "->", nextNum);
-
-  if (_factureNumSecretMode) {
-    refreshFactureNumSuggestions();
+  
+  // Si on est en mode secret, on rafraîchit aussi les suggestions
+  if (document.getElementById('factureNumero').classList.contains('secret-mode-active')) {
+    showFactureSuggestions();
   }
 }
 
-// ===== MODE SECRET NUMÉRO DE FACTURE =====
-let _factureNumSecretMode = false;
+// ===== SECRET MODE & SUGGESTIONS =====
+function initFactureSecretMode() {
+  const input = document.getElementById('factureNumero');
+  if (!input) return;
 
-function initFactureNumSecretMode() {
-    const input = document.getElementById('factureNumero');
-    if (!input) return;
+  // Reset state
+  input.readOnly = true;
+  input.classList.remove('secret-mode-active');
+  const existingSuggestions = document.querySelector('.facture-suggestions');
+  if (existingSuggestions) existingSuggestions.remove();
 
-    _factureNumSecretMode = false;
-    input.readOnly = true;
+  // Triple-clic detection
+  let clickCount = 0;
+  let clickTimer = null;
 
-    const handler = (e) => {
-        if (e.detail === 3) { // Triple clic
-            enableFactureNumEdit();
-        }
-    };
-    input.onclick = handler;
+  input.onclick = (e) => {
+    clickCount++;
+    if (clickCount === 1) {
+      clickTimer = setTimeout(() => {
+        clickCount = 0;
+      }, 500);
+    } else if (clickCount === 3) {
+      clearTimeout(clickTimer);
+      clickCount = 0;
+      enableFactureSecretMode();
+    }
+  };
 }
 
-function enableFactureNumEdit() {
-    const input = document.getElementById('factureNumero');
-    if (!input) return;
+function enableFactureSecretMode() {
+  const input = document.getElementById('factureNumero');
+  if (!input) return;
 
-    _factureNumSecretMode = true;
-    input.readOnly = false;
-    input.focus();
-    showToast('Mode édition numéro de facture activé.', 'info');
+  if (input.classList.contains('secret-mode-active')) return;
 
-    refreshFactureNumSuggestions();
+  input.readOnly = false;
+  input.classList.add('secret-mode-active');
+  showToast('Mode modification de facture activé (Secret).', 'warning');
+  
+  input.focus();
+  input.select();
+
+  showFactureSuggestions();
+
+  // Close suggestions on click outside
+  const onOutsideClick = (e) => {
+    if (!input.contains(e.target) && !e.target.closest('.facture-suggestions')) {
+      const suggestions = document.querySelector('.facture-suggestions');
+      if (suggestions) suggestions.remove();
+      document.removeEventListener('click', onOutsideClick);
+    }
+  };
+  // Timeout for avoid immediate closing
+  setTimeout(() => document.addEventListener('click', onOutsideClick), 100);
 }
 
-function refreshFactureNumSuggestions() {
-    const dateStr = document.getElementById('factureDate').value;
-    const suggestions = DB.getFactureNumSuggestions(dateStr);
-    const datalist = document.getElementById('factureNumSuggestions');
-    if (!datalist) return;
+function showFactureSuggestions() {
+  const input = document.getElementById('factureNumero');
+  const wrapper = input.closest('.facture-numero-wrapper');
+  if (!input || !wrapper) return;
 
-    let html = '';
-    if (suggestions.next) {
-        html += `<option value="${suggestions.next}">Prochain : ${suggestions.next}</option>`;
+  // Remove existing
+  const existing = wrapper.querySelector('.facture-suggestions');
+  if (existing) existing.remove();
+
+  const dateStr = document.getElementById('factureDate').value;
+  const suggestions = getAvailableFactureNums(dateStr);
+
+  if (suggestions.length === 0) return;
+
+  const div = document.createElement('div');
+  div.className = 'facture-suggestions';
+  
+  div.innerHTML = suggestions.map(s => `
+    <div class="suggestion-item" onclick="selectFactureSuggestion('${s.value}')">
+      <span class="suggestion-label">${s.value}</span>
+      <span class="suggestion-type">${s.type}</span>
+    </div>
+  `).join('');
+
+  wrapper.appendChild(div);
+}
+
+function selectFactureSuggestion(val) {
+  const input = document.getElementById('factureNumero');
+  if (input) {
+    input.value = val;
+    onFactureFormChange();
+    const suggestions = document.querySelector('.facture-suggestions');
+    if (suggestions) suggestions.remove();
+  }
+}
+
+function getAvailableFactureNums(dateStr) {
+  const settings = DB.getSettings();
+  let format = settings.factureFormat || settings.facturePrefix || 'FACT-YYYY-######';
+
+  const dateObj = dateStr ? new Date(dateStr) : new Date();
+  const yearFull = dateObj.getFullYear();
+  const yearShort = String(yearFull).substring(2);
+
+  format = format.replace('YYYY', yearFull).replace('YY', yearShort);
+
+  const hashMatch = format.match(/#+/);
+  if (!hashMatch) return [];
+
+  const hashes = hashMatch[0];
+  const padding = hashes.length;
+  const prefixPart = format.substring(0, hashMatch.index);
+  const suffixPart = format.substring(hashMatch.index + padding);
+
+  const escapeRegex = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const regex = new RegExp('^' + escapeRegex(prefixPart) + '(\\d+)' + escapeRegex(suffixPart) + '$');
+
+  const factures = DB.getFactures();
+  const occupied = new Set();
+  let maxNum = 0;
+
+  factures.forEach(f => {
+    const match = (f.numero || '').match(regex);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num)) {
+        occupied.add(num);
+        if (num > maxNum) maxNum = num;
+      }
     }
-    if (suggestions.holes && suggestions.holes.length > 0) {
-        // Inverser pour avoir les plus récents en premier (généralement ce qu'on cherche)
-        [...suggestions.holes].reverse().forEach(h => {
-            html += `<option value="${h}">Trou : ${h}</option>`;
-        });
+  });
+
+  const suggestions = [];
+
+  // 1. Prochain numéro
+  const nextNum = maxNum + 1;
+  const nextPadded = String(nextNum).padStart(padding, '0');
+  suggestions.push({ value: prefixPart + nextPadded + suffixPart, type: 'Suivant' });
+
+  // 2. Trous (gaps)
+  // On cherche les trous de 1 à maxNum
+  const gaps = [];
+  for (let i = 1; i <= maxNum; i++) {
+    if (!occupied.has(i)) {
+      const padded = String(i).padStart(padding, '0');
+      gaps.push({ value: prefixPart + padded + suffixPart, type: 'Trou' });
+      if (gaps.length >= 5) break; // Limiter à 5 trous pour pas encombrer
     }
-    datalist.innerHTML = html;
+  }
+  
+  // Fusionner (trous d'abord car souvent plus pertinents pour corriger une erreur)
+  return [...gaps, ...suggestions.filter(s => !gaps.find(g => g.value === s.value))];
 }
 
 // ===== SET FACTURE STATUS (via buttons) =====
@@ -296,14 +399,24 @@ function updateFactureMontant() {
 function saveFacture() {
   const patientId = document.getElementById('facturePatient').value;
   const date = document.getElementById('factureDate').value;
+  const numero = document.getElementById('factureNumero').value;
+  const currentId = document.getElementById('factureId').value;
 
-  // Extraction du montant numérique depuis le format "xx,xx €"
+  // extraction du montant numérique depuis le format "xx,xx €"
   const montantRaw = document.getElementById('factureMontant').value || '0';
   const montant = parseFloat(montantRaw.replace(',', '.').replace(/[^-0-9.]/g, '')) || 0;
 
   if (!patientId) { showToast('Veuillez sélectionner un patient.', 'error'); return; }
   if (!date) { showToast('La date est obligatoire.', 'error'); return; }
+  if (!numero) { showToast('Le numéro de facture est obligatoire.', 'error'); return; }
   if (isNaN(montant)) { showToast('Le montant est obligatoire.', 'error'); return; }
+
+  // Vérification des doublons (si le numéro a été modifié)
+  const isDuplicate = DB.getFactures().some(f => f.numero === numero && f.id !== currentId);
+  if (isDuplicate) {
+    showToast(`Le numéro de facture ${numero} est déjà utilisé.`, 'error');
+    return;
+  }
 
   // Collect selected seances
   const seanceIds = Array.from(document.querySelectorAll('#factureSeancesSelect input[type="checkbox"]:checked'))
@@ -320,18 +433,6 @@ function saveFacture() {
     statut: document.getElementById('factureStatut').value,
     notes: document.getElementById('factureNotes').value.trim(),
   };
-
-  // Vérification des doublons sur le numéro de facture
-  if (DB.isFactureNumDuplicate(data.numero, data.id)) {
-    showToast(`Le numéro de facture "${data.numero}" est déjà utilisé par une autre facture.`, 'error');
-    const input = document.getElementById('factureNumero');
-    if (input) {
-      input.classList.add('error-shake');
-      setTimeout(() => input.classList.remove('error-shake'), 500);
-      input.focus();
-    }
-    return;
-  }
 
   if (data.id) {
     const result = DB.updateFacture(data);
@@ -856,3 +957,6 @@ window.deleteFacture = deleteFacture;
 window.downloadFacturePDF = downloadFacturePDF;
 window.printFacture = printFacture;
 window.openEmailModal = openEmailModal;
+window.selectFactureSuggestion = selectFactureSuggestion;
+window.initFactureSecretMode = initFactureSecretMode;
+window.enableFactureSecretMode = enableFactureSecretMode;
