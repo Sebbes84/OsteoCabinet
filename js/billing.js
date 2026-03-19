@@ -112,17 +112,12 @@ function openFactureModal(id, prePatientId, preSeanceIds) {
 
   openModal('modalFacture');
   updateFactureModalButtons();
-
-  // Reset secret mode for invoice number
+  
+  // Reset secret mode state
   const numInput = document.getElementById('factureNumero');
   if (numInput) {
     numInput.readOnly = true;
-    numInput.classList.remove('secret-edit-mode');
-    numInput.dataset.clicks = '0';
-    const feedback = document.getElementById('factureNumeroFeedback');
-    if (feedback) feedback.innerHTML = '';
-    const suggestions = document.getElementById('factureNumeroSuggestions');
-    if (suggestions) suggestions.style.display = 'none';
+    numInput.classList.remove('secret-mode');
   }
 }
 
@@ -263,14 +258,6 @@ function saveFacture() {
   if (!date) { showToast('La date est obligatoire.', 'error'); return; }
   if (isNaN(montant)) { showToast('Le montant est obligatoire.', 'error'); return; }
 
-  const numero = document.getElementById('factureNumero').value;
-  const factureId = document.getElementById('factureId').value;
-  if (!DB.isFactureNumeroAvailable(numero, factureId)) {
-    showToast('Ce numéro de facture est déjà utilisé.', 'error');
-    document.getElementById('factureNumero').focus();
-    return;
-  }
-
   // Collect selected seances
   const seanceIds = Array.from(document.querySelectorAll('#factureSeancesSelect input[type="checkbox"]:checked'))
     .map(cb => cb.value);
@@ -288,12 +275,22 @@ function saveFacture() {
   };
 
   if (data.id) {
+    // Vérification de la disponibilité du numéro si changé
+    if (!DB.isFactureNumeroAvailable(data.numero, data.id)) {
+        showToast(`Le numéro ${data.numero} est déjà utilisé par une autre facture.`, 'error');
+        return;
+    }
     const result = DB.updateFacture(data);
     if (result && result.id) {
         document.getElementById('factureId').value = result.id;
     }
     showToast('Facture mise à jour.', 'success');
   } else {
+    // Vérification de la disponibilité du numéro pour nouvelle facture
+    if (!DB.isFactureNumeroAvailable(data.numero)) {
+        showToast(`Le numéro ${data.numero} est déjà utilisé. Veuillez en choisir un autre.`, 'error');
+        return;
+    }
     const result = DB.addFacture(data);
     if (result && result.id) {
         document.getElementById('factureId').value = result.id;
@@ -799,6 +796,84 @@ function downloadFacturePDF() {
     });
 }
 
+// ===== SECRET MODE FOR INVOICE NUMBERS =====
+
+function setupSecretInvoiceMode() {
+    const numInput = document.getElementById('factureNumero');
+    const dropdown = document.getElementById('factureSuggestions');
+    if (!numInput || !dropdown) return;
+
+    numInput.addEventListener('click', (e) => {
+        // detail est le nombre de clics consécutifs
+        if (e.detail === 3) {
+            console.log("Secret Mode Activated for Invoice Number");
+            numInput.readOnly = false;
+            numInput.focus();
+            numInput.select();
+            numInput.classList.add('secret-mode');
+            showToast("Modification du numéro activée.", "info");
+            
+            updateFactureSuggestions();
+            dropdown.style.display = 'block';
+        } else if (!numInput.readOnly) {
+            // Si déjà débloqué, afficher au simple clic
+            updateFactureSuggestions();
+            dropdown.style.display = 'block';
+        }
+    });
+
+    // Fermer le dropdown et quitter le mode secret si on clique ailleurs
+    document.addEventListener('click', (e) => {
+        if (!numInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+            // Sortir du mode secret si activé
+            if (!numInput.readOnly) {
+                numInput.readOnly = true;
+                numInput.classList.remove('secret-mode');
+                showToast("Numéro de facture verrouillé.", "info");
+            }
+        }
+    });
+}
+
+function updateFactureSuggestions() {
+    const dateStr = document.getElementById('factureDate').value;
+    const suggestions = DB.getFactureNumeroSuggestions(dateStr);
+    const dropdown = document.getElementById('factureSuggestions');
+    const numInput = document.getElementById('factureNumero');
+    
+    if (dropdown) {
+        if (suggestions.length === 0) {
+            dropdown.innerHTML = '<div class="suggestion-item"><em style="font-size:12px;color:var(--text-muted)">Aucune suggestion</em></div>';
+        } else {
+            dropdown.innerHTML = suggestions.map(s => {
+                const badgeClass = s.type === 'gap' ? 'label-gap' : 'label-next';
+                const label = s.type === 'gap' ? 'Trou' : 'Prochain';
+                return `
+                    <div class="suggestion-item" data-value="${s.number}">
+                        <span class="suggestion-number">${s.number}</span>
+                        <span class="suggestion-label ${badgeClass}">${label}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Attacher les événements de clic sur les items
+            dropdown.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    numInput.value = item.getAttribute('data-value');
+                    dropdown.style.display = 'none';
+                    onFactureFormChange();
+                });
+            });
+        }
+    }
+}
+
+// Initialisation globale
+document.addEventListener('DOMContentLoaded', () => {
+    setupSecretInvoiceMode();
+});
+
 // Fin du fichier - Export global explicite
 window.sendFactureAuto = sendFactureAuto;
 window.sendFactureByGmail = sendFactureByGmail;
@@ -810,90 +885,3 @@ window.deleteFacture = deleteFacture;
 window.downloadFacturePDF = downloadFacturePDF;
 window.printFacture = printFacture;
 window.openEmailModal = openEmailModal;
-
-// ===== GESTION NUMÉRO DE FACTURE (SECRET MODE) =====
-
-function handleFactureNumeroClick(el) {
-    let clicks = parseInt(el.dataset.clicks || '0') + 1;
-    el.dataset.clicks = clicks;
-
-    if (clicks >= 3) {
-        el.readOnly = false;
-        el.classList.add('secret-edit-mode');
-        showToast('Mode modification manuelle activé.', 'info');
-        el.dataset.clicks = '0';
-        el.focus();
-        el.select();
-        
-        // Attacher les événements de validation si pas déjà fait
-        if (!el.dataset.eventsAttached) {
-            el.addEventListener('input', validateFactureNumero);
-            el.addEventListener('focus', () => updateFactureNumeroSuggestions(true));
-            // Ne pas fermer les suggestions au blur immédiatement pour permettre le clic
-            el.addEventListener('blur', () => setTimeout(() => updateFactureNumeroSuggestions(false), 200));
-            el.dataset.eventsAttached = 'true';
-        }
-        updateFactureNumeroSuggestions(true);
-    }
-
-    // Reset le compteur après 1 seconde sans clic
-    clearTimeout(el.clickTimer);
-    el.clickTimer = setTimeout(() => { el.dataset.clicks = '0'; }, 1000);
-}
-
-function validateFactureNumero() {
-    const el = document.getElementById('factureNumero');
-    const feedback = document.getElementById('factureNumeroFeedback');
-    const num = el.value.trim();
-    const currentId = document.getElementById('factureId').value;
-
-    if (!num) {
-        feedback.innerHTML = '<span class="status-error">Le numéro est vide</span>';
-        return;
-    }
-
-    if (!DB.isFactureNumeroAvailable(num, currentId)) {
-        feedback.innerHTML = '<span class="status-error">❌ Déjà utilisé</span>';
-    } else {
-        feedback.innerHTML = '<span class="status-success">✅ Disponible</span>';
-    }
-    
-    // Trigger "dirty" state to enable save button
-    onFactureFormChange();
-}
-
-function updateFactureNumeroSuggestions(show) {
-    const container = document.getElementById('factureNumeroSuggestions');
-    if (!show) {
-        container.style.display = 'none';
-        return;
-    }
-
-    const dateStr = document.getElementById('factureDate').value;
-    const suggestions = DB.getFactureNumeroSuggestions(dateStr);
-
-    if (suggestions.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
-
-    container.innerHTML = '<strong>Suggestions :</strong>' + suggestions.map(s => {
-        const label = s.type === 'next' ? ' (Suivant)' : ' (Combler un trou)';
-        const color = s.type === 'next' ? 'var(--primary-light)' : 'var(--warning)';
-        return `<div class="suggestion-item" onclick="selectFactureNumeroSuggestion('${s.number}')">
-            ${s.number} <span style="font-size:10px; color:${color}; margin-left:5px;">${label}</span>
-        </div>`;
-    }).join('');
-    container.style.display = 'block';
-}
-
-function selectFactureNumeroSuggestion(num) {
-    const el = document.getElementById('factureNumero');
-    el.value = num;
-    validateFactureNumero();
-    document.getElementById('factureNumeroSuggestions').style.display = 'none';
-    onFactureFormChange(); // Force update buttons
-}
-
-window.handleFactureNumeroClick = handleFactureNumeroClick;
-window.selectFactureNumeroSuggestion = selectFactureNumeroSuggestion;
