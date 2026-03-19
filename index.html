@@ -25,7 +25,7 @@
                     Sentry.init({
                         dsn: "https://1cd09dcbc4d3018d189c2bb1a2483d31@o4511014108856320.ingest.de.sentry.io/4511014120521808",
                         release: "osteocabinet@" + (data.version || "inconnue"),
-                        environment: "test",
+                        environment: data.environment || "test",
                         // Activation explicite du monitoring des sessions (pour les statistiques de version sans bugs)
                         autoSessionTracking: true,
                     });
@@ -33,7 +33,7 @@
                 .catch(err => {
                     Sentry.init({
                         dsn: "https://1cd09dcbc4d3018d189c2bb1a2483d31@o4511014108856320.ingest.de.sentry.io/4511014120521808",
-                        environment: "test",
+                        environment: "inconnu",
                         autoSessionTracking: true,
                     });
                 });

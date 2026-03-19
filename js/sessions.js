@@ -432,6 +432,12 @@ function deleteSeanceFromModal() {
     }
 }
 
+function onSeanceFormChange() {
+    // Cette fonction pourra être étendue pour gérer l'activation d'un bouton "Enregistrer" 
+    // ou d'autres indicateurs de modification, similaire à onFactureFormChange.
+    console.log("Séance form changed");
+}
+
 // ===== FACTURER DEPUIS MODAL =====
 function facturerSeanceFromModal() {
     const sId = document.getElementById('seanceId').value;
@@ -481,6 +487,7 @@ window.deleteSeanceFromModal = deleteSeanceFromModal;
 window.markSeanceRealisee = markSeanceRealisee;
 window.setSeanceStatus = setSeanceStatus;
 window.onSeanceFormChange = onSeanceFormChange;
+window.onSenceFormChange = onSeanceFormChange; // Alias pour corriger une potentielle faute de frappe
 window.openFactureFromSeance = openFactureFromSeance;
 window.facturerSeanceFromModal = facturerSeanceFromModal;
 window.updateSeanceNoteImportante = updateSeanceNoteImportante;

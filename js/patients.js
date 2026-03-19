@@ -505,13 +505,14 @@ function savePatient() {
 }
 
 // ===== DELETE PATIENT =====
-function triggerPatientDelete(id) {
-    if (!confirm('Supprimer ce patient et toutes ses données (séances, factures) ?')) return;
+function deletePatient(id) {
+    if (!confirm('Supprimer définitivement ce patient et toutes ses données (séances, factures) ?')) return;
     DB.deletePatient(id);
     showToast('Patient supprimé.', 'info');
     renderPatients();
     renderDashboard();
-    closeModal('modalPatient');
+    // Re-peupler les selects de patients dans les autres pages
+    if (typeof populatePatientSelects === 'function') populatePatientSelects();
 }
 
 // ===== SHOW PATIENT SEANCES =====
