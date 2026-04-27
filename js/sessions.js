@@ -4,6 +4,7 @@
 
 let currentSeancesList = [];
 let renderedSeancesCount = 0;
+let seanceAnatomicalDiagram = null;
 const SESSION_CHUNK_SIZE = 100;
 
 // On initialise l'écouteur de scroll une seule fois
@@ -107,6 +108,7 @@ const filterSeances = debounce(() => {
 
 // ===== OPEN MODAL =====
 function openSeanceModal(id, prePatientId, preDate) {
+
     // Reset
     document.getElementById('seanceId').value = '';
     document.getElementById('seanceDate').value = preDate || getTodayStr();
@@ -138,11 +140,15 @@ function openSeanceModal(id, prePatientId, preDate) {
     // Init autocomplete patient (1ère fois seulement)
     initPatientAutocomplete('acSeancePatient', 'seancePatient', (pid) => {
         updateSeanceNoteImportante(pid);
+        // Mettre à jour le sexe du diagramme si le patient change
+        if (typeof initSeanceAnatomicalDiagram === 'function') {
+            initSeanceAnatomicalDiagram();
+        }
     });
 
     // Reset sélection patient
     setAcValue('acSeancePatient', prePatientId || '');
-
+    
     // Reset statut (via buttons)
     setSeanceStatus('planifiee');
 
@@ -169,8 +175,6 @@ function openSeanceModal(id, prePatientId, preDate) {
         document.getElementById('seanceConseils').value = s.conseils || '';
         document.getElementById('seanceProchaine').value = s.prochaine || '';
 
-        // Afficher la note importante du patient
-        updateSeanceNoteImportante(s.patientId);
 
         // Appliquer le statut enregistré
         setSeanceStatus(s.statut || 'planifiee');
@@ -201,9 +205,25 @@ function openSeanceModal(id, prePatientId, preDate) {
             updateSeanceMontant();
         }
 
+        // Initialisation du diagramme (après avoir setté la date)
+        initSeanceAnatomicalDiagram();
+
+        // Load Markers
+        if (seanceAnatomicalDiagram) {
+            let markers = [];
+            try {
+                markers = JSON.parse(s.anatomical_markers || '[]');
+            } catch (e) { console.error("Error parsing markers:", e); }
+            seanceAnatomicalDiagram.setMarkers(markers);
+        }
+
         // Bouton fiche patient
         if (btnFiche && s.patientId) btnFiche.style.display = 'inline-flex';
     } else {
+        // Nouvelle séance
+        initSeanceAnatomicalDiagram();
+        if (seanceAnatomicalDiagram) seanceAnatomicalDiagram.setMarkers([]);
+        
         // Nouvelle séance : on sélectionne le premier type par défaut si dispo
         const sel = document.getElementById('seanceType');
         if (sel && sel.options.length > 0) {
@@ -233,16 +253,18 @@ function setSeanceStatus(status) {
         });
     }
 
-    // Gestion de l'affichage dynamique des boutons Supprimer / Facturer
+    // Gestion de l'affichage dynamique des boutons Supprimer / Facturer / Attestation
     const seanceId = document.getElementById('seanceId')?.value;
     const btnDel = document.getElementById('btnDeleteSeanceModal');
     const btnFacture = document.getElementById('btnFactureSeanceModal');
+    const btnAttestation = document.getElementById('btnAttestationSeanceModal');
 
     if (btnDel && btnFacture) {
         if (seanceId) { // On est en mode modification
             if (status === 'realisee') {
                 btnDel.style.display = 'none';
                 btnFacture.style.display = 'inline-flex';
+                if (btnAttestation) btnAttestation.style.display = 'inline-flex';
 
                 // Vérifier si une facture existe déjà pour cette séance
                 const factures = DB.getFactures();
@@ -258,10 +280,12 @@ function setSeanceStatus(status) {
             } else {
                 btnDel.style.display = 'inline-flex';
                 btnFacture.style.display = 'none';
+                if (btnAttestation) btnAttestation.style.display = 'none';
             }
         } else { // Mode création patient
             btnDel.style.display = 'none';
             btnFacture.style.display = 'none';
+            if (btnAttestation) btnAttestation.style.display = 'none';
         }
     }
 }
@@ -359,6 +383,7 @@ function saveSeance() {
             bilan: document.getElementById('seanceBilan')?.value.trim() || '',
             conseils: document.getElementById('seanceConseils')?.value.trim() || '',
             prochaine: document.getElementById('seanceProchaine')?.value.trim() || '',
+            anatomical_markers: seanceAnatomicalDiagram ? JSON.stringify(seanceAnatomicalDiagram.markers) : '[]'
         };
 
         if (data.id) {
@@ -455,6 +480,17 @@ function facturerSeanceFromModal() {
     }
 }
 
+// ===== GÉNÉRER ATTESTATION DEPUIS MODAL =====
+function generateAttestationFromModal() {
+    const sId = document.getElementById('seanceId').value;
+    if (!sId) return;
+    if (typeof previewAttestation === 'function') {
+        previewAttestation(sId);
+    } else {
+        showToast("Erreur : fonction de génération d'attestation non trouvée.", "error");
+    }
+}
+
 /**
  * Affiche la note importante du patient sur la fiche de séance
  * @param {string} patientId
@@ -476,6 +512,99 @@ function updateSeanceNoteImportante(patientId) {
     } else {
         container.style.display = 'none';
     }
+
+    // Update Anatomical Diagram Gender
+    if (seanceAnatomicalDiagram) {
+        const gender = (p && p.sexe === 'F') ? 'female' : 'male';
+        seanceAnatomicalDiagram.setGender(gender);
+    }
+}
+
+/**
+ * Initialise le schéma corporel dans la séance
+ */
+function initSeanceAnatomicalDiagram() {
+    const container = document.getElementById('seanceAnatomicalDiagram');
+    if (!container) return;
+
+    const settings = DB.getSettings();
+    const legend = settings.markerLegend || [
+        { label: 'Douleur', color: '#e05a5a' },
+        { label: 'Tension', color: '#4f72c4' },
+        { label: 'Traitement', color: '#4caf82' }
+    ];
+
+    const seance = document.getElementById('seanceId')?.value ? DB.getSeanceById(document.getElementById('seanceId').value) : null;
+    const patientId = document.getElementById('seancePatient')?.value || (seance ? seance.patientId : null);
+    const patient = patientId ? DB.getPatientById(patientId) : null;
+    
+    // Mapping Genre : F -> female, else male
+    const gender = (patient && patient.sexe === 'F') ? 'female' : 'male';
+
+    seanceAnatomicalDiagram = new AnatomicalDiagram('seanceAnatomicalDiagram', {
+        gender: gender,
+        showGenderToggle: false,
+        currentDate: document.getElementById('seanceDate').value,
+        onChange: () => {
+             if (typeof onSeanceFormChange === 'function') onSeanceFormChange();
+        }
+    });
+
+    // Render legend chips
+    renderAnatomicalLegend('seanceAnatomicalLegend', true, (type) => {
+        if (seanceAnatomicalDiagram) seanceAnatomicalDiagram.setCurrentType(type);
+    });
+
+    // Sync date changes
+    const dateInput = document.getElementById('seanceDate');
+    if (dateInput) {
+        dateInput.onchange = (e) => {
+            if (seanceAnatomicalDiagram) seanceAnatomicalDiagram.currentDate = e.target.value;
+            if (typeof onSeanceFormChange === 'function') onSeanceFormChange();
+        };
+    }
+}
+
+/**
+ * Affiche la légende des marqueurs anatomiques (base de données -> UI)
+ */
+function renderAnatomicalLegend(containerId, isInteractive = false, onSelect = null) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const settings = DB.getSettings();
+    const legend = settings.markerLegend || [
+        { label: 'Douleur', color: '#e05a5a' },
+        { label: 'Tension', color: '#4f72c4' },
+        { label: 'Traitement', color: '#4caf82' }
+    ];
+
+    container.innerHTML = legend.map((m, i) => {
+        const escapedLabel = m.label.replace(/'/g, "\\'");
+        return `
+            <div class="legend-chip ${isInteractive && i === 0 ? 'active' : ''}" 
+                 ${isInteractive ? `onclick="selectSeanceMarkerType(this, '${escapedLabel}', '${m.color}')"` : ''}>
+                <div class="legend-dot" style="background:${m.color}"></div>
+                <span>${m.label}</span>
+            </div>
+        `;
+    }).join('');
+
+    // Initial selection
+    if (isInteractive && onSelect && legend.length > 0) {
+        onSelect(legend[0]);
+    }
+}
+
+function selectSeanceMarkerType(el, label, color) {
+    if (!seanceAnatomicalDiagram) return;
+    
+    // UI toggle
+    const chips = el.parentElement.querySelectorAll('.legend-chip');
+    chips.forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    
+    seanceAnatomicalDiagram.setCurrentType({ label, color });
 }
 
 // Fin du fichier - Export global explicite
@@ -493,3 +622,4 @@ window.facturerSeanceFromModal = facturerSeanceFromModal;
 window.updateSeanceNoteImportante = updateSeanceNoteImportante;
 window.renderMoreSeances = renderMoreSeances;
 window.handleSeancesScroll = handleSeancesScroll;
+window.generateAttestationFromModal = generateAttestationFromModal;

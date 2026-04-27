@@ -935,7 +935,11 @@ function previewFactureWithTemplate(id) {
   }
 
   _currentPreviewFactureId = id;
+  window._isPreviewAttestation = false;
   openModal('modalFacturePreview');
+  if (typeof updatePreviewModalButtons === 'function') {
+      updatePreviewModalButtons(false);
+  }
 }
 
 function renderFieldWithData(f, data) {
@@ -1013,3 +1017,115 @@ ${content.outerHTML}
   printWin.focus();
   setTimeout(() => { printWin.print(); printWin.close(); }, 600);
 }
+
+// ── APERÇU ATTESTATION depuis une séance ──────────────────────
+function previewAttestationWithTemplate(seanceId) {
+  const s = DB.getSeanceById(seanceId);
+  if (!s) return;
+  const patient = DB.getPatientById(s.patientId);
+  const settings = DB.getSettings();
+
+  const template = settings.invoiceTemplate;
+  if (!template || !template.fields) {
+    if (typeof previewAttestation === 'function') {
+        previewAttestation(seanceId); // fallback
+    }
+    return;
+  }
+
+  // Champs à EXCLURE pour l'attestation
+  const excludedKeys = [
+    'totalHT', 'tva', 'totalTTC', 
+    'paiement', 'statutFacture', 'patientNss',
+    'factureNumero', 'patientDateNaissance',
+    'titleFacture', 'factureDate'
+  ];
+
+  const patientFull = patient ? (formatPrenom(patient.prenom) + ' ' + formatNom(patient.nom)) : 'le patient';
+  const dateStr = typeof formatDateLong === 'function' ? formatDateLong(s.date) : s.date;
+  const certificateText = `J'atteste la présence de <strong>${patientFull}</strong> le <strong>${dateStr}</strong> pour une séance d'ostéopathie.`;
+
+  const realData = {
+    logo: settings.logo || null,
+    cabinetName: settings.cabinetName || '',
+    osteoName: settings.osteoName || '',
+    adeli: settings.adeli || '',
+    siret: settings.siret || '',
+    cabinetAddress: (settings.address || '').replace(/\n/g, '<br>'),
+    cabinetPhone: settings.phone || '',
+    cabinetEmail: settings.email || '',
+    cabinetWebsite: settings.website || '',
+    titleFacture: '',
+    factureDate: 'Le ' + (typeof formatDate === 'function' ? formatDate(s.date) : s.date),
+    patientNom: patient ? `${formatNom(patient.nom)} ${formatPrenom(patient.prenom)}` : 'Patient inconnu',
+    patientDateNaissance: '',
+    patientAdresse: patient ? (patient.adresse || '') : '',
+    patientVille: patient ? [patient.codePostal, patient.ville].filter(Boolean).join(' ') : '',
+    patientPhone: patient ? (patient.telephone || '') : '',
+    patientEmail: patient ? (patient.email || '') : '',
+    notes: s.notes || '', 
+    mentionLegale: settings.mentionLegale || 'Exonéré de TVA — Article 261-4-1° du CGI',
+    signature: settings.signature || null,
+    separatorLine: '',
+    customText: certificateText,
+    tableSeances: `<div style="line-height:1.6; font-size:14px; margin-top:20px;">${certificateText}</div>`,
+  };
+
+  const fieldsHtml = template.fields
+    .filter(f2 => f2.visible && !excludedKeys.includes(f2.key))
+    .map(f2 => renderFieldWithData(f2, realData))
+    .join('');
+
+  const html = `
+  <div class="invoice-preview" id="printableInvoice" style="
+    position:relative;
+    width:${template.pageWidth || 635}px;
+    height:${template.pageHeight || 897}px;
+    background:${template.background || '#fff'};
+    font-family:${template.fontFamily || 'Inter, sans-serif'};
+    overflow:hidden;
+    margin:0 auto;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+  ">
+    ${fieldsHtml}
+  </div>`;
+
+  document.getElementById('facturePreviewContent').innerHTML = html;
+  
+  const titleEl = document.querySelector('#modalFacturePreview h2');
+  if (titleEl) {
+    titleEl.innerHTML = `Aperçu de l'attestation`;
+  }
+
+  window._isPreviewAttestation = true;
+  window._currentPreviewSeanceId = seanceId;
+  window._currentPreviewFactureId = null; 
+
+  openModal('modalFacturePreview');
+  
+  if (typeof updatePreviewModalButtons === 'function') {
+      updatePreviewModalButtons(true);
+  }
+}
+
+function updatePreviewModalButtons(isAttestation = false) {
+    const mailBtn = document.getElementById('btnEnvoyerMail');
+    const btnPdf = document.querySelector('#modalFacturePreview .modal-footer-right button[onclick="downloadFacturePDF()"]');
+    const btnEdit = document.querySelector('#modalFacturePreview .modal-footer-left button');
+
+    if (isAttestation) {
+        if (mailBtn) mailBtn.textContent = '📧 Envoyer l\'attestation';
+        if (btnPdf) btnPdf.title = 'Télécharger l\'attestation en PDF';
+        if (btnEdit) btnEdit.style.display = 'none';
+    } else {
+        if (mailBtn) mailBtn.textContent = '📧 Envoyer la facture';
+        if (btnPdf) btnPdf.title = 'Télécharger la facture en PDF';
+        if (btnEdit) btnEdit.style.display = 'inline-flex';
+    }
+}
+
+window.previewFactureWithTemplate = previewFactureWithTemplate;
+window.previewAttestationWithTemplate = previewAttestationWithTemplate;
+window.renderFieldWithData = renderFieldWithData;
+window.printFactureWithTemplate = printFactureWithTemplate;
+window.updatePreviewModalButtons = updatePreviewModalButtons;

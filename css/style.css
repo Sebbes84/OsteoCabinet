@@ -1,5 +1,5 @@
 /* ===========================
-   OSTÉOCABINET — STYLES
+   OSTÃƒÆ’Ã¢â‚¬Â°OCABINET ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â STYLES
    =========================== */
 
 :root {
@@ -348,13 +348,13 @@ body {
   flex-direction: column;
 }
 
-/* Spacer qui pousse la section Paramétrage vers le bas */
+/* Spacer qui pousse la section ParamÃƒÆ’Ã‚Â©trage vers le bas */
 .nav-spacer {
   flex: 1;
   min-height: 12px;
 }
 
-/* Séparateur "Paramétrage" */
+/* SÃƒÆ’Ã‚Â©parateur "ParamÃƒÆ’Ã‚Â©trage" */
 .nav-separator {
   display: flex;
   align-items: center;
@@ -549,9 +549,9 @@ body.light-mode .app-version {
 .page-content {
   flex: 1;
   overflow: hidden;
-  /* Empêche le scroll global */
+  /* EmpÃƒÆ’Ã‚Âªche le scroll global */
   padding: 0;
-  /* On gère le padding dans les pages */
+  /* On gÃƒÆ’Ã‚Â¨re le padding dans les pages */
 }
 
 /* ===== PAGES ===== */
@@ -753,7 +753,7 @@ body.light-mode .app-version {
   flex-shrink: 0;
 }
 
-/* Pousse le dernier bouton à droite si pas de barre de recherche flex-1 */
+/* Pousse le dernier bouton ÃƒÆ’Ã‚Â  droite si pas de barre de recherche flex-1 */
 .toolbar>.btn:last-child {
   margin-left: auto;
 }
@@ -789,7 +789,7 @@ body.light-mode .app-version {
   gap: 8px;
 }
 
-/* Compteur de résultats */
+/* Compteur de rÃƒÆ’Ã‚Â©sultats */
 .search-count {
   font-size: 12px;
   color: var(--text-muted);
@@ -802,7 +802,7 @@ body.light-mode .app-version {
   flex-shrink: 0;
 }
 
-/* Surbrillance des termes recherchés */
+/* Surbrillance des termes recherchÃƒÆ’Ã‚Â©s */
 mark.search-mark {
   background: rgba(79, 114, 196, 0.3);
   color: var(--primary-light);
@@ -1069,7 +1069,7 @@ textarea.form-control {
   min-height: 80px;
 }
 
-/* Options des <select> — fond sombre forcé */
+/* Options des <select> ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â fond sombre forcÃƒÆ’Ã‚Â© */
 select.form-control option,
 select.form-control optgroup {
   background-color: #1e2840;
@@ -1224,9 +1224,9 @@ select.form-control option:hover {
 }
 
 .modal-large {
-  max-width: 1200px;
-  height: 90vh;
-  max-height: 90vh;
+  max-width: 1600px;
+  height: 95vh;
+  max-height: 95vh;
 }
 
 .modal-medium {
@@ -1234,7 +1234,7 @@ select.form-control option:hover {
 }
 
 .modal-xl {
-  max-width: 900px;
+  max-width: 1600px;
 }
 
 @keyframes modalIn {
@@ -1279,11 +1279,7 @@ select.form-control option:hover {
   color: var(--text);
 }
 
-.modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-}
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
 
 .modal-footer {
   padding: 16px 24px;
@@ -1294,10 +1290,10 @@ select.form-control option:hover {
   gap: 12px;
   flex-shrink: 0;
   flex-wrap: wrap;
-  /* Permet le passage à la ligne si trop de boutons */
+  /* Permet le passage ÃƒÆ’Ã‚Â  la ligne si trop de boutons */
 }
 
-/* Quand pas de groupe gauche/droite — les boutons vont à droite */
+/* Quand pas de groupe gauche/droite ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â les boutons vont ÃƒÆ’Ã‚Â  droite */
 .modal-footer>.btn,
 .modal-footer>button {
   margin-left: auto;
@@ -1321,6 +1317,57 @@ select.form-control option:hover {
   align-items: center;
   margin-left: auto;
   flex-wrap: wrap;
+}
+
+
+.legend-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: var(--transition);
+}
+
+.legend-chip:hover {
+  border-color: var(--primary-light);
+  background: rgba(79, 114, 196, 0.1);
+}
+
+.legend-chip.active {
+  border-color: var(--primary);
+  background: var(--primary-glow);
+  font-weight: 600;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-body-split {
+  display: grid;
+  grid-template-columns: 1fr 500px;
+  gap: 32px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.modal-body-main {
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.modal-body-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* ===== PLANNING ===== */
@@ -2026,7 +2073,7 @@ body.light-mode .status-btn:hover {
   font-size: 12px;
 }
 
-/* ===== UPCOMING — LAYOUT FLAT UNE SEULE LIGNE ===== */
+/* ===== UPCOMING ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â LAYOUT FLAT UNE SEULE LIGNE ===== */
 .upcoming-item-flat {
   display: flex;
   align-items: center;
@@ -2140,14 +2187,14 @@ body.light-mode .status-btn:hover {
 }
 
 /* ===== INVOICE PREVIEW ===== */
-/* Pour la génération PDF sans marges et pleine page */
+/* Pour la gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©ration PDF sans marges et pleine page */
 .invoice-preview.pdf-mode {
   padding: 0 !important;
   margin: 0 !important;
   max-width: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  /* On garde la largeur naturelle du template pour ne pas décaler les champs absolus */
+  /* On garde la largeur naturelle du template pour ne pas dÃƒÆ’Ã‚Â©caler les champs absolus */
 }
 
 .invoice-preview {
@@ -2356,7 +2403,7 @@ body.light-mode .status-btn:hover {
   line-height: 1.8;
 }
 
-/* ===== PATIENT HISTORY — TABLE COMPACTE ===== */
+/* ===== PATIENT HISTORY ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â TABLE COMPACTE ===== */
 /* ===== PATIENT AUTOCOMPLETE ===== */
 .patient-ac-container {
   position: relative;
@@ -2617,7 +2664,7 @@ body.light-mode .ac-item.ac-highlighted {
   border-color: rgba(160, 174, 192, 0.2);
 }
 
-/* ===== LEGACY history-item (conservé pour compatibilité) ===== */
+/* ===== LEGACY history-item (conservÃƒÆ’Ã‚Â© pour compatibilitÃƒÆ’Ã‚Â©) ===== */
 .history-item {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
@@ -2707,10 +2754,10 @@ body.light-mode .ac-item.ac-highlighted {
 }
 
 /* ============================================================
-   TEMPLATE EDITOR — Éditeur visuel de facture
+   TEMPLATE EDITOR ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ÃƒÆ’Ã¢â‚¬Â°diteur visuel de facture
    ============================================================ */
 
-/* Layout principal — prend tout l'espace restant dans la page */
+/* Layout principal ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â prend tout l'espace restant dans la page */
 .te-layout {
   display: flex;
   flex: 1;
@@ -2722,10 +2769,10 @@ body.light-mode .ac-item.ac-highlighted {
   background: var(--bg-card);
 }
 
-/* La page template : retire le padding et étire verticalement */
+/* La page template : retire le padding et ÃƒÆ’Ã‚Â©tire verticalement */
 #page-template.active {
   margin: 0;
-  /* Plus de marges négatives qui décalent tout */
+  /* Plus de marges nÃƒÆ’Ã‚Â©gatives qui dÃƒÆ’Ã‚Â©calent tout */
   height: 100%;
   overflow: hidden;
   display: flex;
@@ -2739,10 +2786,10 @@ body.light-mode .ac-item.ac-highlighted {
   flex-shrink: 0;
 }
 
-/* ── Palette (gauche) ── */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Palette (gauche) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .te-palette {
   width: 250px;
-  /* Un peu plus large pour les icônes */
+  /* Un peu plus large pour les icÃƒÆ’Ã‚Â´nes */
   min-width: 250px;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
@@ -2766,7 +2813,7 @@ body.light-mode .ac-item.ac-highlighted {
   flex: 1;
   overflow-y: auto;
   padding: 8px 4px;
-  /* Un peu d'espace sur les côtés */
+  /* Un peu d'espace sur les cÃƒÆ’Ã‚Â´tÃƒÆ’Ã‚Â©s */
 }
 
 .te-palette-section {
@@ -2840,7 +2887,7 @@ body.light-mode .ac-item.ac-highlighted {
   color: #fff;
 }
 
-/* ── Zone centrale ── */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Zone centrale ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 .te-center {
   flex: 1;
   display: flex;
@@ -2962,7 +3009,7 @@ body.light-mode .ac-item.ac-highlighted {
   display: inline-block;
 }
 
-/* La feuille A4 simulée */
+/* La feuille A4 simulÃƒÆ’Ã‚Â©e */
 #teCanvas {
   position: relative;
   background: #ffffff;
@@ -3041,10 +3088,74 @@ body.light-mode .ac-item.ac-highlighted {
   padding: 4px;
 }
 
-/* ── Panneau propriétés (droite) ── */
+
+/* Anatomical Diagram Style - Final Minimalist Clean */
+.anatomical-container { display: flex; flex-direction: column; width: 100%; overflow: hidden; margin-top: 0; }
+.anatomical-views-wrapper { display: flex; gap: 0; align-items: stretch; justify-content: center; background: transparent; }
+.anatomical-view-group { flex: 1; display: flex; flex-direction: column; }
+.anatomical-view-label { text-align: center; padding: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); opacity: 0.6; }
+.anatomical-svg-container { width: 100%; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: transparent; min-height: 280px; }
+.anatomical-svg { width: 100%; height: auto; max-height: 400px; cursor: crosshair; filter: none !important; }
+.anatomical-legend-info { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 0.8rem; border: none; opacity: 0.8; }
+
+/* Tab padding management for Flush Modals */
+
+/* Tab visibility management - Fixes navigation */
+.tab-content { padding: 24px; flex: 1; flex-direction: column; overflow-y: auto; display: none; }
+.tab-content.active { display: block; }
+
+/* Special layout for the split tab */
+#tabSeancesPatient.tab-content.active { display: flex !important; padding: 0 !important; overflow: hidden; }
+
+/* Modal Split Layout Unified Finalized V4 - Full Height Separator Seamless */
+.modal-body-split { display: flex; gap: 0; flex: 1; min-height: 0; overflow: hidden; height: 100%; width: 100%; }
+.modal-body-main { flex: 1; overflow-y: auto; padding: 24px; }
+.modal-body-sidebar { width: 480px; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: #ffffff; padding: 0; position: relative; height: 100%; }
+.modal-body-sidebar-inner { padding: 15px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
+
+
+/* History Table Interactive Rows */
+.history-compact-row { cursor: pointer; transition: background 0.2s; }
+.history-compact-row:hover { background-color: rgba(79, 114, 196, 0.05); }
+.history-compact-row.selected { background-color: #4f72c4 !important; color: white !important; }
+.history-compact-row.selected td { color: white !important; }
+.history-compact-row.selected .badge { border-color: rgba(255,255,255,0.3); }
+
+
+
+.modal-body-flush { padding: 0 !important; overflow: hidden; display: flex; flex-direction: column; flex: 1; }
+
+
+/* Dashboard Layout Fixes - Full Height & Internal Scroll */
+.dashboard-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.dashboard-grid .card {
+  margin-bottom: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#dashSeancesProchaines, 
+#dashFacturesRecentes {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+
+/* ===== TEMPLATE EDITOR PROPERTIES SIDEBAR ===== */
 .te-properties {
-  width: 270px;
-  min-width: 270px;
+  width: 320px;
+  min-width: 320px;
   background: var(--bg-sidebar);
   border-left: 1px solid var(--border);
   display: flex;
@@ -3053,395 +3164,150 @@ body.light-mode .ac-item.ac-highlighted {
 }
 
 .te-properties-header {
-  padding: 14px 16px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-muted);
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.15);
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--primary-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.te-props-header {
+  padding: 12px 16px;
+  background: rgba(79, 114, 196, 0.1);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.te-props-field-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.te-props-delete-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.te-props-delete-btn:hover {
+  background: rgba(224, 90, 90, 0.15);
 }
 
 #tePropertiesPanel {
   flex: 1;
   overflow-y: auto;
-  padding: 10px 12px;
-}
-
-.te-props-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: var(--text-dim);
-  text-align: center;
-  gap: 12px;
-}
-
-.te-props-empty-icon {
-  font-size: 32px;
-  opacity: 0.5;
-}
-
-.te-props-empty p {
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.te-props-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-.te-props-field-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.te-props-delete-btn {
-  background: rgba(224, 90, 90, 0.15);
-  border: 1px solid rgba(224, 90, 90, 0.3);
-  color: var(--danger);
-  border-radius: 5px;
-  width: 26px;
-  height: 26px;
-  font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font);
-  transition: all 0.15s;
-}
-
-.te-props-delete-btn:hover {
-  background: var(--danger);
-  color: #fff;
 }
 
 .te-props-section {
-  margin-bottom: 14px;
-  padding-bottom: 14px;
+  padding: 16px;
   border-bottom: 1px solid var(--border);
 }
 
-.te-props-section:last-of-type {
-  border-bottom: none;
-}
-
 .te-props-section-title {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--text-muted);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .te-props-grid4 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
 }
 
 .te-prop-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  margin-bottom: 10px;
 }
 
 .te-prop-group label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
 }
 
-.te-prop-group input[type="number"],
-.te-prop-group input[type="text"],
+.te-prop-group input, 
 .te-prop-group select,
 .te-prop-group textarea {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 5px 8px;
+  border-radius: 4px;
+  padding: 6px 10px;
   color: var(--text);
-  font-size: 12px;
-  font-family: var(--font);
+  font-size: 12.5px;
   outline: none;
   width: 100%;
-  transition: border-color 0.15s;
 }
 
-.te-prop-group input:focus,
-.te-prop-group select:focus,
-.te-prop-group textarea:focus {
+.te-prop-group input:focus, 
+.te-prop-group select:focus {
   border-color: var(--primary);
-}
-
-.te-prop-group input[type="color"] {
-  height: 30px;
-  width: 100%;
-  border-radius: 5px;
-  cursor: pointer;
-  padding: 2px;
-  border: 1px solid var(--border);
-  background: var(--bg-card2);
-}
-
-.te-prop-group input[type="checkbox"] {
-  width: auto;
-  margin: 0;
-  cursor: pointer;
-}
-
-.te-prop-group textarea {
-  resize: vertical;
-  min-height: 60px;
+  background: rgba(79, 114, 196, 0.08);
 }
 
 .te-props-toggles {
   display: flex;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 15px;
+  margin-top: 5px;
 }
 
 .te-toggle-label {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
-  color: var(--text-muted);
+  font-size: 12px;
   cursor: pointer;
 }
 
 .te-props-actions {
+  padding: 16px;
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding-top: 4px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.te-props-actions .btn {
-  font-size: 11px;
-  padding: 5px 8px;
-  flex: 1;
-  min-width: 70px;
+.te-props-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-dim);
 }
 
-/* Header de la page Template */
-.te-page-header {
+.te-props-empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.2;
+}
+
+/* Fix Editor Header - Horizontal Buttons */
+#page-template .te-page-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 12px;
+  align-items: center;
+  padding: 16px 28px !important;
 }
 
 .te-page-actions {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* Page template : plein écran */
-#page-template {
-  padding: 0;
-}
-
-#page-template .te-page-header {
-  padding: 0 0 16px 0;
-}
-
-/* Light mode overrides */
-body.light-mode .te-palette,
-body.light-mode .te-properties {
-  background: #f4f7fc;
-}
-
-body.light-mode #teCanvas {
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.1),
-    0 8px 48px rgba(0, 0, 0, 0.15);
-}
-
-body.light-mode .te-canvas-scroll {
-  background: #d8dfe8;
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.06) 1px, transparent 0);
-  background-size: 20px 20px;
-}
-
-body.light-mode .te-palette-field:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-body.light-mode .te-prop-group input,
-body.light-mode .te-prop-group select,
-body.light-mode .te-prop-group textarea {
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--text);
-}
-
-body.light-mode .te-tool-btn {
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--text-muted);
-}
-
-body.light-mode .te-tool-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--text);
-}
-
-body.light-mode .te-template-options select {
-  background: #fff;
-  color: var(--text);
-}
-
-/* Indicateur "champ visible/caché" dans le canvas */
-.te-field-hidden {
-  opacity: 0.3;
-}
-
-/* Info guide dans le canvas (quand vide) */
-.te-canvas-guide {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  color: rgba(150, 160, 180, 0.5);
-  pointer-events: none;
-  font-size: 13px;
-  line-height: 2;
-}
-
-@keyframes pulsePreview {
-  from {
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-
-  to {
-    transform: translateX(-50%) translateY(-2px) scale(1.05);
-  }
-}
-
-.patients-layout {
-  display: flex;
-  gap: 15px;
-  flex: 1;
-  /* Prend toute la place restante sous le toolbar */
-  overflow: hidden;
-}
-
-.patients-card {
-  flex: 1;
-  overflow-y: auto;
-  /* Scroll interne à la card */
-  margin-bottom: 0 !important;
-  position: relative;
-}
-
-/* Zone scrollable pour les séances et factures */
-.scrollable-table-card {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.alphabet-index {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 10px 4px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  width: 32px;
-  height: 100%;
-  user-select: none;
-}
-
-.alphabet-letter {
-  flex: 1;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: var(--transition);
-  border-radius: 50%;
 }
 
-.alphabet-letter:hover {
-  color: var(--primary-light);
-  background: rgba(79, 114, 196, 0.1);
-}
-
-.alphabet-letter.active {
-  color: #fff;
-  background: var(--primary);
-}
-
-.data-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--bg-card);
-}
-
-/* On enlève le padding haut des cartes qui contiennent ces listes pour que le header soit bien collé en haut */
-.patients-card,
-.scrollable-table-card {
-  padding-top: 0 !important;
-}
-
-.patients-card .data-table thead th,
-.scrollable-table-card .data-table thead th {
-  padding-top: 20px;
-  background: var(--bg-card);
-}
-
-/* ===== NOTE IMPORTANTE / ALERTE ===== */
-.note-importante-alert {
-  background-color: rgba(224, 90, 90, 0.1) !important;
-  border: 1px solid rgba(224, 90, 90, 0.4) !important;
-  color: #fff !important;
-  font-weight: 600 !important;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  transition: var(--transition);
-}
-
-.note-importante-filled {
-  background-color: rgba(224, 90, 90, 0.25) !important;
-  border-color: var(--danger) !important;
-  color: #fff !important;
-}
-
-body.light-mode .note-importante-filled {
-  background-color: #fee2e2 !important;
-  color: #b91c1c !important;
-  border-color: #fca5a5 !important;
-}
-
-body.light-mode .note-importante-alert {
-  color: #b91c1c !important;
-}
-
-#dashSeancesProchaines,
-#dashFacturesRecentes {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}

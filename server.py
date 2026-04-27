@@ -50,7 +50,7 @@ def init_db():
             id TEXT PRIMARY KEY, patientId TEXT, date TEXT, heure TEXT,
             duree INTEGER, type TEXT, montant REAL, statut TEXT,
             anamnese TEXT, bilan TEXT, conseils TEXT,
-            prochaine TEXT, updatedAt TEXT, createdAt TEXT,
+            prochaine TEXT, anatomical_markers TEXT, updatedAt TEXT, createdAt TEXT,
             FOREIGN KEY(patientId) REFERENCES patients(id)
         """,
         "factures": """

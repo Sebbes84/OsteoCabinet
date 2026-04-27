@@ -525,6 +525,37 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Légende Schéma Anatomique</h2>
+                        </div>
+                        <div id="markerLegendList" class="type-seances-list">
+                            <!-- Généré en JS -->
+                        </div>
+                        <div class="type-seance-form-container mt-16">
+                            <h3 class="settings-sub-title" id="markerFormTitle">Ajouter un type de marqueur</h3>
+                            <input type="hidden" id="editMarkerIndex" value="-1">
+                            <div class="type-seance-form-grid" style="grid-template-columns: 1fr 80px 100px; gap: 8px;">
+                                <div class="form-group mb-0">
+                                    <label class="label-sm">Nom du marqueur</label>
+                                    <input type="text" id="newMarkerLabel" class="form-control" placeholder="ex: Douleur">
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label class="label-sm">Couleur</label>
+                                    <input type="color" id="newMarkerColor" class="form-control" value="#e05a5a" style="padding: 2px; height: 38px;">
+                                </div>
+                                <div class="type-seance-form-actions">
+                                    <button class="btn btn-primary w-100" id="btnAddMarker" onclick="addMarkerLegend()">
+                                        ➕ Ajouter
+                                    </button>
+                                    <button class="btn btn-secondary w-100" id="btnCancelMarkerEdit" onclick="cancelMarkerEdit()" style="display:none">
+                                        Annuler
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="settings-grid">
@@ -676,7 +707,7 @@
                                     <input type="text" id="settingEmailSubject" class="form-control"
                                         placeholder="Votre facture — Cabinet d'Ostéopathie">
                                 </div>
-                                <div class="form-group" style="height:100%;">
+                                <div class="form-group">
                                     <label>Corps du message par défaut</label>
                                     <div class="form-hint"
                                         style="margin-bottom:6px; font-size:12px; color:var(--text-muted);">Variables :
@@ -685,11 +716,15 @@
                                         <code>{date_facture}</code>, <code>{nom_cabinet}</code>,
                                         <code>{nom_osteo}</code>
                                     </div>
-                                    <textarea id="settingEmailBody" class="form-control" rows="7" placeholder="Bonjour {prenom_patient} {nom_patient},
+                                    <textarea id="settingEmailBody" class="form-control" rows="5" placeholder="Bonjour {prenom_patient} {nom_patient},
 
 Veuillez trouver ci-joint la facture n° {numero_facture} d'un montant de {montant} € datée du {date_facture}.
 
-Cordialement,
+N'hésitez pas à me contacter pour toute question."></textarea>
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label>Signature des emails</label>
+                                    <textarea id="settingEmailSignature" class="form-control" rows="3" placeholder="Cordialement,
 {nom_osteo}
 {nom_cabinet}"></textarea>
                                 </div>
@@ -810,7 +845,7 @@ Cordialement,
                 <button class="tab-btn" onclick="switchTab('tabAntecedents', this)">Antécédents</button>
                 <button class="tab-btn" onclick="switchTab('tabSeancesPatient', this)">Historique séances</button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body modal-body-flush">
                 <div id="tabInfos" class="tab-content active">
                     <input type="hidden" id="patientId">
                     <div class="form-row">
@@ -945,8 +980,20 @@ Cordialement,
                     </div>
                 </div>
                 <div id="tabSeancesPatient" class="tab-content">
-                    <div id="patientSeancesHistory" class="empty-state">Enregistrez d'abord le patient pour voir son
-                        historique.</div>
+                    <div class="modal-body-split">
+                        <div class="modal-body-main">
+                            <div id="patientSeancesHistory" class="empty-state">Enregistrez d'abord le patient pour voir son historique.</div>
+                        </div>
+                        <div class="modal-body-sidebar">
+                            <div class="modal-body-sidebar-inner">
+                                <div id="patientAnatomicalDiagram"></div>
+                                <div id="patientAnatomicalLegend" class="anatomical-legend-selector"></div>
+                                <div class="anatomical-legend-info" style="margin-top:auto">
+                                    <small class="text-muted">Historique complet de toutes les séances.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -967,79 +1014,91 @@ Cordialement,
 
     <!-- Modal Séance -->
     <div class="modal-overlay" id="modalSeance">
-        <div class="modal modal-medium">
+        <div class="modal modal-xl">
             <div class="modal-header">
                 <h2 id="modalSeanceTitle">Nouvelle séance</h2>
                 <button class="modal-close" onclick="closeModal('modalSeance')">✕</button>
             </div>
-            <div class="modal-body">
-                <input type="hidden" id="seanceId">
-                <div class="form-group session-status-container">
-                    <label>Statut de la séance</label>
-                    <div class="status-btn-group">
-                        <input type="hidden" id="seanceStatut" value="planifiee">
-                        <button type="button" class="status-btn" data-status="planifiee"
-                            onclick="setSeanceStatus('planifiee')">📅 Planifiée</button>
-                        <button type="button" class="status-btn" data-status="realisee"
-                            onclick="setSeanceStatus('realisee')">✅ Réalisée</button>
-                        <button type="button" class="status-btn" data-status="annulee"
-                            onclick="setSeanceStatus('annulee')">❌ Annulée</button>
+            <div class="modal-body modal-body-flush">
+                <div class="modal-body-split">
+                    <div class="modal-body-main">
+                        <input type="hidden" id="seanceId">
+                        <div class="form-group session-status-container">
+                            <label>Statut de la séance</label>
+                            <div class="status-btn-group">
+                                <input type="hidden" id="seanceStatut" value="planifiee">
+                                <button type="button" class="status-btn" data-status="planifiee"
+                                    onclick="setSeanceStatus('planifiee')">📅 Planifiée</button>
+                                <button type="button" class="status-btn" data-status="realisee"
+                                    onclick="setSeanceStatus('realisee')">✅ Réalisée</button>
+                                <button type="button" class="status-btn" data-status="annulee"
+                                    onclick="setSeanceStatus('annulee')">❌ Annulée</button>
+                            </div>
+                        </div>
+
+                        <div id="seanceNoteImportanteContainer" style="display:none; margin-bottom: 20px;">
+                            <div id="seanceNoteImportanteText" class="note-importante-filled"
+                                style="padding: 12px; border-radius: var(--radius-sm); font-size: 13.5px; border: 1px solid var(--danger); line-height: 1.5;">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Patient *</label>
+                            <div id="acSeancePatient" class="patient-ac-container"></div>
+                            <input type="hidden" id="seancePatient">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Date *</label>
+                                <input type="date" id="seanceDate" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Heure *</label>
+                                <input type="time" id="seanceHeure" class="form-control" step="900">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Type de séance</label>
+                            <select id="seanceType" class="form-control" onchange="updateSeanceMontant()">
+                            </select>
+                        </div>
+
+                        <!-- Durée et Montant sont gérés automatiquement via le type de séance -->
+                        <input type="hidden" id="seanceDuree">
+                        <input type="hidden" id="seanceMontant">
+                        <div class="form-group">
+                            <label>Motif 1</label>
+                            <input type="text" id="seanceAnamnese" class="form-control" placeholder="Motif de consultation…">
+                        </div>
+                        <div class="form-group">
+                            <label>Motif 2</label>
+                            <input type="text" id="seanceMotif2" class="form-control" placeholder="Deuxième motif…">
+                        </div>
+                        <div class="form-group">
+                            <label>Bilan & gestes réalisés</label>
+                            <textarea id="seanceBilan" class="form-control" rows="4"
+                                placeholder="Zones traitées, techniques utilisées…"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Conseils donnés au patient</label>
+                            <textarea id="seanceConseils" class="form-control" rows="2"
+                                placeholder="Exercices, hydratation, repos…"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Prochaine séance recommandée</label>
+                            <input type="text" id="seanceProchaine" class="form-control" placeholder="Dans 3-4 semaines…">
+                        </div>
                     </div>
-                </div>
-
-                <div id="seanceNoteImportanteContainer" style="display:none; margin-bottom: 20px;">
-                    <div id="seanceNoteImportanteText" class="note-importante-filled"
-                        style="padding: 12px; border-radius: var(--radius-sm); font-size: 13.5px; border: 1px solid var(--danger); line-height: 1.5;">
+                    <div class="modal-body-sidebar">
+                        <div class="modal-body-sidebar-inner">
+                            <div id="seanceAnatomicalDiagram"></div>
+                            <div id="seanceAnatomicalLegend" class="anatomical-legend-selector">
+                                <!-- Généré en JS -->
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Patient *</label>
-                    <div id="acSeancePatient" class="patient-ac-container"></div>
-                    <input type="hidden" id="seancePatient">
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Date *</label>
-                        <input type="date" id="seanceDate" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Heure *</label>
-                        <input type="time" id="seanceHeure" class="form-control" step="900">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Type de séance</label>
-                    <select id="seanceType" class="form-control" onchange="updateSeanceMontant()">
-                    </select>
-                </div>
-
-                <!-- Durée et Montant sont gérés automatiquement via le type de séance -->
-                <input type="hidden" id="seanceDuree">
-                <input type="hidden" id="seanceMontant">
-                <div class="form-group">
-                    <label>Motif 1</label>
-                    <input type="text" id="seanceAnamnese" class="form-control" placeholder="Motif de consultation…">
-                </div>
-                <div class="form-group">
-                    <label>Motif 2</label>
-                    <input type="text" id="seanceMotif2" class="form-control" placeholder="Deuxième motif…">
-                </div>
-                <div class="form-group">
-                    <label>Bilan & gestes réalisés</label>
-                    <textarea id="seanceBilan" class="form-control" rows="4"
-                        placeholder="Zones traitées, techniques utilisées…"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Conseils donnés au patient</label>
-                    <textarea id="seanceConseils" class="form-control" rows="2"
-                        placeholder="Exercices, hydratation, repos…"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Prochaine séance recommandée</label>
-                    <input type="text" id="seanceProchaine" class="form-control" placeholder="Dans 3-4 semaines…">
                 </div>
             </div>
             <div class="modal-footer">
@@ -1050,6 +1109,8 @@ Cordialement,
                         style="display:none" title="Supprimer la séance">🗑 Supprimer</button>
                     <button class="btn btn-warning" id="btnFactureSeanceModal" onclick="facturerSeanceFromModal()"
                         style="display:none" title="Éditer la facture">🧾 Éditer la facture</button>
+                    <button class="btn btn-outline" id="btnAttestationSeanceModal" onclick="generateAttestationFromModal()"
+                        style="display:none; color:var(--primary-light); border-color:var(--primary-light);" title="Générer une attestation de présence">📄 Attestation</button>
                 </div>
                 <div class="modal-footer-right">
                     <button class="btn btn-secondary" onclick="closeModal('modalSeance')">Annuler</button>
@@ -1265,15 +1326,16 @@ Cordialement,
     <!-- Librairie pour génération PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <script src="js/data.js"></script>
-    <script src="js/patient-autocomplete.js"></script>
-    <script src="js/app.js"></script>
-    <script src="js/patients.js"></script>
-    <script src="js/sessions.js"></script>
-    <script src="js/billing.js"></script>
-    <script src="js/planning.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/template-editor.js"></script>
+    <script src="js/data.js?v=1.0.11"></script>
+    <script src="js/anatomical-diagram.js?v=1.0.11"></script>
+    <script src="js/patient-autocomplete.js?v=1.0.11"></script>
+    <script src="js/app.js?v=1.0.11"></script>
+    <script src="js/patients.js?v=1.0.11"></script>
+    <script src="js/sessions.js?v=1.0.11"></script>
+    <script src="js/billing.js?v=1.0.11"></script>
+    <script src="js/planning.js?v=1.0.11"></script>
+    <script src="js/settings.js?v=1.0.11"></script>
+    <script src="js/template-editor.js?v=1.0.11"></script>
 </body>
 
 </html>

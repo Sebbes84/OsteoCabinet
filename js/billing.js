@@ -346,6 +346,18 @@ function previewFacture(id) {
   _previewFactureClassique(id);
 }
 
+// ===== PREVIEW ATTESTATION (dispatch) =====
+function previewAttestation(seanceId) {
+  const settings = DB.getSettings();
+  if (settings.invoiceTemplate && settings.invoiceTemplate.fields && settings.invoiceTemplate.fields.length > 0) {
+    if (typeof previewAttestationWithTemplate === 'function') {
+      previewAttestationWithTemplate(seanceId);
+      return;
+    }
+  }
+  _previewAttestationClassique(seanceId);
+}
+
 // ===== PREVIEW CLASSIQUE (fallback) =====
 function _previewFactureClassique(id) {
   const f = DB.getFactureById(id);
@@ -472,17 +484,137 @@ function _previewFactureClassique(id) {
   }
 
   _currentPreviewFactureId = id;
+  window._isPreviewAttestation = false;
   openModal('modalFacturePreview');
+  if (typeof updatePreviewModalButtons === 'function') {
+      updatePreviewModalButtons(false);
+  }
+}
+
+// ===== PREVIEW ATTESTATION CLASSIQUE (fallback) =====
+function _previewAttestationClassique(seanceId) {
+  const s = DB.getSeanceById(seanceId);
+  if (!s) return;
+  const patient = DB.getPatientById(s.patientId);
+  const settings = DB.getSettings();
+
+  const logoHtml = settings.logo
+    ? `<img src="${settings.logo}" onerror="this.style.display='none'" alt="Logo">`
+    : `<div class="no-logo">${settings.cabinetName || 'Cabinet Ostéopathique'}</div>`;
+
+  const signatureHtml = settings.signature
+    ? `<div class="invoice-signature">
+        <div class="invoice-signature-block">
+          <img src="${settings.signature}" onerror="this.style.display='none'" alt="Signature">
+          <div class="sig-label">Signature</div>
+          <div class="sig-name">${settings.osteoName || ''}</div>
+        </div>
+       </div>`
+    : '';
+
+  const patientAddr = patient
+    ? [
+      `<strong>${formatNom(patient.nom)} ${formatPrenom(patient.prenom)}</strong>`,
+      patient.adresse || '',
+      [patient.codePostal, patient.ville].filter(Boolean).join(' '),
+      patient.telephone || '',
+      patient.email || '',
+    ].filter(Boolean).join('<br>')
+    : '<em>Patient inconnu</em>';
+
+  const cabinetAddr = `
+    <strong>${settings.osteoName || 'Ostéopathe D.O.'}</strong><br>
+    ${settings.cabinetName ? settings.cabinetName + '<br>' : ''}
+    ${(settings.address || '').replace(/\n/g, '<br>')}
+    ${settings.phone ? '<br>' + settings.phone : ''}
+    ${settings.email ? '<br>' + settings.email : ''}
+    ${settings.adeli ? '<br>N° ADELI : ' + settings.adeli : ''}
+    ${settings.siret ? '<br>SIRET : ' + settings.siret : ''}
+  `;
+
+  const mentionLegale = settings.mentionLegale || 'Exonéré de TVA — Article 261-4-1° du CGI';
+
+  const patientFull = patient ? (formatPrenom(patient.prenom) + ' ' + formatNom(patient.nom)) : 'le patient';
+  const dateStr = formatDateLong(s.date);
+
+  const html = `
+  <div class="invoice-preview" id="printableInvoice">
+    <div class="invoice-header">
+      <div class="invoice-logo">${logoHtml}</div>
+      <div class="invoice-title-block">
+        <div class="invoice-title"></div>
+        <div class="invoice-subtitle">${settings.cabinetName || 'Cabinet d\'Ostéopathie'}</div>
+      </div>
+    </div>
+
+    <div class="invoice-addresses">
+      <div class="invoice-from">
+        <h3>Émetteur</h3>
+        <p>${cabinetAddr}</p>
+      </div>
+      <div class="invoice-to">
+        <h3>Patient</h3>
+        <p>${patientAddr}</p>
+      </div>
+    </div>
+
+    <div class="attestation-content" style="margin: 40px 0; line-height: 1.8; font-size: 15px;">
+        J'atteste la présence de <strong>${patientFull}</strong> le <strong>${dateStr}</strong> pour une séance d'ostéopathie.
+        <br><br>
+        Attestation délivrée à la demande de l'intéressé pour faire valoir ce que de droit.
+    </div>
+
+    ${signatureHtml}
+
+    <div class="invoice-footer">
+      ${mentionLegale}
+      ${settings.website ? ' · ' + settings.website : ''}
+    </div>
+  </div>
+  `;
+
+  document.getElementById('facturePreviewContent').innerHTML = html;
+  
+  const titleEl = document.querySelector('#modalFacturePreview h2');
+  if (titleEl) {
+    titleEl.innerHTML = `Aperçu de l'attestation`;
+  }
+
+  window._isPreviewAttestation = true;
+  window._currentPreviewSeanceId = seanceId;
+  window._currentPreviewFactureId = null;
+
+  openModal('modalFacturePreview');
+  if (typeof updatePreviewModalButtons === 'function') {
+      updatePreviewModalButtons(true);
+  }
 }
 
 // ===== EMAIL =====
 
 function openEmailModal() {
-  if (!_currentPreviewFactureId) return;
-  const f = DB.getFactureById(_currentPreviewFactureId);
-  if (!f) return;
-  const patient = DB.getPatientById(f.patientId);
+  const isAttestation = window._isPreviewAttestation;
+  if (!isAttestation && !_currentPreviewFactureId) return;
+
+  const f = !isAttestation ? DB.getFactureById(_currentPreviewFactureId) : null;
+  const s = isAttestation ? DB.getSeanceById(window._currentPreviewSeanceId) : null;
+  
+  if (!f && !s) return;
+
+  const patientId = isAttestation ? s.patientId : f.patientId;
+  const patient = DB.getPatientById(patientId);
   const settings = DB.getSettings();
+
+  // Mise à jour du titre et des textes de la modale email
+  const emailTitle = document.querySelector('#modalEmailFacture .modal-header h2');
+  const emailAutoText = document.querySelector('#emailAutoInfo span:last-child');
+  if (isAttestation) {
+      if (emailTitle) emailTitle.innerHTML = '📧 Envoyer l\'attestation';
+      if (emailAutoText) emailAutoText.innerHTML = '<strong>Envoi automatique activé.</strong> L\'attestation sera générée en PDF et envoyée directement avec la pièce jointe.';
+  } else {
+      if (emailTitle) emailTitle.innerHTML = '📧 Envoyer la facture';
+      if (emailAutoText) emailAutoText.innerHTML = '<strong>Envoi automatique activé.</strong> La facture sera générée en PDF et envoyée directement avec la pièce jointe.';
+  }
 
   // Pré-remplir le destinataire
   document.getElementById('emailTo').value = (patient && patient.email) ? patient.email : '';
@@ -491,9 +623,9 @@ function openEmailModal() {
   const vars = {
     '{nom_patient}': patient ? formatNom(patient.nom) : '',
     '{prenom_patient}': patient ? formatPrenom(patient.prenom) : '',
-    '{numero_facture}': f.numero || '',
-    '{montant}': (f.montant || 0).toFixed(2),
-    '{date_facture}': formatDateLong ? formatDateLong(f.date) : f.date,
+    '{numero_facture}': f ? (f.numero || '') : '',
+    '{montant}': f ? (f.montant || 0).toFixed(2) : (s ? (s.montant || 0).toFixed(2) : '0.00'),
+    '{date_facture}': formatDateLong ? formatDateLong(isAttestation ? s.date : f.date) : (isAttestation ? s.date : f.date),
     '{nom_cabinet}': settings.cabinetName || 'Cabinet Ostéopathique',
     '{nom_osteo}': settings.osteoName || '',
   };
@@ -504,24 +636,36 @@ function openEmailModal() {
     return s;
   };
 
-  // Objet par défaut
-  const defaultSubject = settings.emailSubject ||
-    `Votre facture n° ${f.numero} — ${settings.cabinetName || 'Cabinet Ostéopathique'}`;
-  document.getElementById('emailSubject').value = applyVars(settings.emailSubject
-    ? settings.emailSubject
-    : `Votre facture n° {numero_facture} — {nom_cabinet}`);
+   // Objet et Corps par défaut
+  let defaultSubject, defaultBody;
+  const signature = settings.emailSignature || `Cordialement,\n{nom_osteo}\n{nom_cabinet}`;
+  
+  if (isAttestation) {
+      defaultSubject = `Attestation de présence — {nom_cabinet}`;
+      defaultBody = `Bonjour {prenom_patient} {nom_patient},
 
-  // Corps par défaut
-  const defaultBody = settings.emailBody ||
-    `Bonjour {prenom_patient} {nom_patient},
+Veuillez trouver ci-joint votre attestation de présence pour la séance du {date_facture}.
+
+${signature}`;
+  } else {
+      defaultSubject = settings.emailSubject || `Votre facture n° {numero_facture} — {nom_cabinet}`;
+      // Si on a un corps personnalisé, on l'utilise tel quel (il peut déjà contenir la signature)
+      // Mais pour les nouvelles installations ou si Signature est rempli et pas Body, on peut mixer
+      defaultBody = (settings.emailBody || `Bonjour {prenom_patient} {nom_patient},
 
 Veuillez trouver ci-joint la facture n° {numero_facture} d'un montant de {montant} € datée du {date_facture}.
 
-N'hésitez pas à me contacter pour toute question.
+N'hésitez pas à me contacter pour toute question.`) + "\n\n" + signature;
+      
+      // Si settings.emailBody existait déjà avant la mise à jour, il contient probablement déjà la signature.
+      // Pour éviter les doublons, si le corps contient déjà "Cordialement" et qu'on ajoute la signature, 
+      // on ne le fait que si settings.emailSignature a été explicitement rempli.
+      if (settings.emailBody && !settings.emailSignature) {
+          defaultBody = settings.emailBody; 
+      }
+  }
 
-Cordialement,
-{nom_osteo}
-{nom_cabinet}`;
+  document.getElementById('emailSubject').value = applyVars(defaultSubject);
   document.getElementById('emailBody').value = applyVars(defaultBody);
 
   // Toggle buttons based on SMTP config
@@ -591,8 +735,18 @@ async function sendFactureAuto() {
     element.classList.remove('pdf-mode');
 
     // 2. Send via backend
-    const f = DB.getFactureById(_currentPreviewFactureId);
-    const fileName = f ? `Facture_${f.numero.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Facture.pdf';
+    const isAttestation = window._isPreviewAttestation;
+    const f = !isAttestation ? DB.getFactureById(_currentPreviewFactureId) : null;
+    const s = isAttestation ? DB.getSeanceById(window._currentPreviewSeanceId) : null;
+    const patient = s ? DB.getPatientById(s.patientId) : (f ? DB.getPatientById(f.patientId) : null);
+    
+    let fileName = 'Document.pdf';
+    if (isAttestation) {
+        const namePart = patient ? `${formatNom(patient.nom)}_${formatPrenom(patient.prenom)}` : 'Patient';
+        fileName = `Attestation_${namePart}_${s.date}.pdf`;
+    } else if (f) {
+        fileName = `Facture_${f.numero.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    }
 
     const response = await fetch('http://localhost:5180/api/send-email', {
       method: 'POST',
@@ -610,10 +764,9 @@ async function sendFactureAuto() {
     if (!response.ok) throw new Error(result.error || "Erreur lors de l'envoi");
 
     // Enregistrer la date d'envoi
-    const f2 = DB.getFactureById(_currentPreviewFactureId);
-    if (f2) {
-      f2.sentAt = new Date().toISOString();
-      DB.updateFacture(f2);
+    if (!isAttestation && f) {
+      f.sentAt = new Date().toISOString();
+      DB.updateFacture(f);
       renderFactures();
     }
 
@@ -657,17 +810,24 @@ function sendFactureByGmail() {
   window.open(gmailUrl, '_blank');
 
   // On considère qu'elle est envoyée si l'utilisateur a ouvert Gmail
-  const f = DB.getFactureById(_currentPreviewFactureId);
-  if (f) {
-    f.sentAt = new Date().toISOString();
-    DB.updateFacture(f);
-    renderFactures();
+  const isAttestation = window._isPreviewAttestation;
+  if (!isAttestation) {
+      const f = DB.getFactureById(_currentPreviewFactureId);
+      if (f) {
+        f.sentAt = new Date().toISOString();
+        DB.updateFacture(f);
+        renderFactures();
+      }
   }
 
   closeModal('modalEmailFacture');
-  showToast('Gmail ouvert. Facture marquée comme envoyée.', 'success');
+  showToast('Gmail ouvert. Document marqué comme envoyé.', 'success');
   // Rafraîchir l'aperçu
-  if (_currentPreviewFactureId) previewFacture(_currentPreviewFactureId);
+  if (isAttestation) {
+      previewAttestation(window._currentPreviewSeanceId);
+  } else if (_currentPreviewFactureId) {
+      previewFacture(_currentPreviewFactureId);
+  }
 }
 
 // ===== PRINT =====
@@ -738,8 +898,18 @@ function downloadFacturePDF() {
   }
 
   // Récupérer les infos pour le nom du fichier
-  const f = DB.getFactureById(_currentPreviewFactureId);
-  const fileName = f ? `Facture_${f.numero.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Facture.pdf';
+  const isAttestation = window._isPreviewAttestation;
+  const f = !isAttestation ? DB.getFactureById(_currentPreviewFactureId) : null;
+  const s = isAttestation ? DB.getSeanceById(window._currentPreviewSeanceId) : null;
+  const patient = s ? DB.getPatientById(s.patientId) : (f ? DB.getPatientById(f.patientId) : null);
+
+  let fileName = 'Document.pdf';
+  if (isAttestation) {
+      const namePart = patient ? `${formatNom(patient.nom)}_${formatPrenom(patient.prenom)}` : 'Patient';
+      fileName = `Attestation_${namePart}_${s.date}.pdf`;
+  } else if (f) {
+      fileName = `Facture_${f.numero.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+  }
 
   showToast("Génération du PDF...", "info");
 

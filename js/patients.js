@@ -23,6 +23,7 @@ function highlightDate(isoDate, query) {
 // ===== PATIENTS LIST RENDERING OPTIONS =====
 let currentPatientsList = [];
 let renderedCount = 0;
+let patientAnatomicalDiagram = null;
 const CHUNK_SIZE = 100;
 
 function initAlphabetIndex() {
@@ -88,6 +89,14 @@ function renderPatients(filtered, query) {
     container.addEventListener('scroll', handlePatientsScroll);
     container.dataset.scrollInit = "true";
   }
+
+  // Add listener for patientSexe field
+  document.getElementById('patientSexe')?.addEventListener('change', (e) => {
+    if (typeof patientAnatomicalDiagram !== 'undefined' && patientAnatomicalDiagram) {
+      const gender = (e.target.value === 'F') ? 'female' : 'male';
+      patientAnatomicalDiagram.setGender(gender);
+    }
+  });
 
   // Compteur de résultats
   const countEl = document.getElementById('patientSearchCount');
@@ -297,6 +306,16 @@ function openPatientModal(id) {
     if (document.getElementById('patientChirurgie')) document.getElementById('patientChirurgie').value = p.chirurgie || p.traitements || '';
     if (document.getElementById('patientDigestif')) document.getElementById('patientDigestif').value = p.digestif || p.contraIndications || '';
 
+    // Mettre à jour le sexe du diagramme anatomique
+    if (typeof patientAnatomicalDiagram !== 'undefined' && patientAnatomicalDiagram) {
+      patientAnatomicalDiagram.setGender(p.sexe === 'F' ? 'female' : 'male');
+    }
+    
+    // Afficher la légende (non interactive)
+    if (typeof renderAnatomicalLegend === 'function') {
+      renderAnatomicalLegend('patientAnatomicalLegend', false);
+    }
+
     // ── Barre de résumé ──
     const seances = DB.getSeancesByPatient(id).filter(s => s.statut === 'realisee');
     const derniere = seances.sort((a, b) => b.date > a.date ? 1 : -1)[0];
@@ -314,6 +333,9 @@ function openPatientModal(id) {
 
     // History
     renderPatientSeancesHistory(id);
+
+    // Anatomical Synthesis
+    initPatientAnatomicalDiagram(id);
   }
 
   openModal('modalPatient');
@@ -345,6 +367,9 @@ function refreshPatientModal() {
 
   // 2. Refresh History
   renderPatientSeancesHistory(patientId);
+
+  // 3. Refresh Anatomical Synthesis
+  initPatientAnatomicalDiagram(patientId);
 }
 
 // ===== PATIENT SEANCES HISTORY in modal =====
@@ -376,7 +401,7 @@ function renderPatientSeancesHistory(patientId) {
     // Chercher la facture liée à cette séance
     const facture = DB.getFactures().find(f => (f.seanceIds || []).includes(s.id));
     const factureStatutLabel = facture ? getFactureStatusLabel(facture.statut) : null;
-    return `<tr class="history-compact-row">
+    return `<tr class="history-compact-row" onclick="selectSeanceHistoryMarkers('${s.id}', this)">
               <td>${formatDate(s.date)}</td>
               <td>${s.heure || '—'}</td>
               <td>${s.type || 'Standard'}</td>
@@ -391,12 +416,12 @@ function renderPatientSeancesHistory(patientId) {
               </td>
               <td>
                 <div class="actions">
-                  <button class="btn btn-sm btn-outline" title="Voir le détail" onclick="viewSeanceDetail('${s.id}')">👁️</button>
-                  <button class="btn btn-sm btn-outline" title="Modifier la séance" onclick="openSeanceModal('${s.id}')">✏️</button>
+                  <button class="btn btn-sm btn-outline" title="Voir le détail" onclick="event.stopPropagation(); viewSeanceDetail('${s.id}')">👁️</button>
+                  <button class="btn btn-sm btn-outline" title="Modifier la séance" onclick="event.stopPropagation(); openSeanceModal('${s.id}')">✏️</button>
                    ${facture
-        ? `<button class="btn btn-sm btn-warning" title="Éditer la facture ${facture.numero}" onclick="openFactureModal('${facture.id}')">🧾</button>
-                    <button class="btn btn-sm btn-outline" title="Aperçu / Imprimer la facture ${facture.numero}" onclick="previewFacture('${facture.id}')">🖨️</button>`
-        : `<button class="btn btn-sm btn-outline" title="Créer une facture" onclick="openFactureFromSeance('${s.id}')">🧾+</button>`
+        ? `<button class="btn btn-sm btn-warning" title="Éditer la facture ${facture.numero}" onclick="event.stopPropagation(); openFactureModal('${facture.id}')">🧾</button>
+                    <button class="btn btn-sm btn-outline" title="Aperçu / Imprimer la facture ${facture.numero}" onclick="event.stopPropagation(); previewFacture('${facture.id}')">🖨️</button>`
+        : `<button class="btn btn-sm btn-outline" title="Créer une facture" onclick="event.stopPropagation(); openFactureFromSeance('${s.id}')">🧾+</button>`
       }
                 </div>
               </td>
@@ -404,6 +429,74 @@ function renderPatientSeancesHistory(patientId) {
   }).join('')}
       </tbody>
     </table>`;
+}
+
+/**
+ * Initialise le schéma récapitulatif pour le patient
+ */
+function initPatientAnatomicalDiagram(patientId) {
+    const container = document.getElementById('patientAnatomicalDiagram');
+    if (!container) return;
+
+    if (!patientAnatomicalDiagram) {
+        const p = DB.getPatientById(patientId);
+        const gender = (p && p.sexe === 'F') ? 'female' : 'male';
+
+        patientAnatomicalDiagram = new AnatomicalDiagram('patientAnatomicalDiagram', {
+            gender: gender,
+            showGenderToggle: false,
+            readOnly: true
+        });
+    }
+
+    // Agrégation des marqueurs de TOUTES les séances
+    const seances = DB.getSeancesByPatient(patientId);
+    let allMarkers = [];
+    seances.forEach(s => {
+        try {
+            const markers = JSON.parse(s.anatomical_markers || '[]');
+            // On ajoute la date de la séance à chaque marqueur pour le tooltip
+            markers.forEach(m => {
+                m.sessionDate = s.date;
+                allMarkers.push(m);
+            });
+        } catch (e) {
+            console.error("Error parsing markers for seance", s.id, e);
+        }
+    });
+
+    patientAnatomicalDiagram.setMarkers(allMarkers);
+}
+
+/**
+ * Sélectionne une séance dans l'historique pour filtrer les marqueurs
+ */
+function selectSeanceHistoryMarkers(seanceId, row) {
+    if (!patientAnatomicalDiagram) return;
+
+    const isAlreadySelected = row.classList.contains('selected');
+    
+    // Reset all rows
+    const allRows = row.parentElement.querySelectorAll('tr');
+    allRows.forEach(r => r.classList.remove('selected'));
+
+    if (isAlreadySelected) {
+        // Unselect -> Show ALL markers
+        const patientId = document.getElementById('patientId').value;
+        if (patientId) {
+            initPatientAnatomicalDiagram(patientId);
+        }
+    } else {
+        // Select -> Show ONLY this session's markers
+        row.classList.add('selected');
+        const seance = DB.getSeanceById(seanceId);
+        if (seance) {
+            try {
+                const markers = JSON.parse(seance.anatomical_markers || '[]');
+                patientAnatomicalDiagram.setMarkers(markers);
+            } catch (e) { console.error(e); }
+        }
+    }
 }
 
 // ===== VIEW SEANCE DETAIL (popup lecture seule) =====

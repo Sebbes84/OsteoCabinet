@@ -3,6 +3,12 @@
    ============================================================ */
 console.log("Loading settings.js...");
 
+const DEFAULT_MARKER_LEGEND = [
+    { label: 'Douleur', color: '#e05a5a' },
+    { label: 'Tension', color: '#4f72c4' },
+    { label: 'Traitement', color: '#4caf82' }
+];
+
 // ===== LOAD =====
 function loadSettings() {
     const s = DB.getSettings();
@@ -21,6 +27,7 @@ function loadSettings() {
     document.getElementById('settingLabelPayee').value = s.labelPayee || 'Acquittée';
     document.getElementById('settingEmailSubject').value = s.emailSubject || '';
     document.getElementById('settingEmailBody').value = s.emailBody || '';
+    document.getElementById('settingEmailSignature').value = s.emailSignature || '';
     document.getElementById('settingBackupFrequency').value = s.backupFrequency || 'none';
     document.getElementById('settingBackupPath').value = s.backupPath || '';
     document.getElementById('settingSmtpEmail').value = s.smtpEmail || '';
@@ -77,6 +84,9 @@ function loadSettings() {
 
     // Types de séances
     renderTypeSeances(s.typesSeances || []);
+
+    // Légende Anatomique
+    renderMarkerLegend(s.markerLegend || DEFAULT_MARKER_LEGEND);
 }
 
 // ===== SAVE =====
@@ -107,12 +117,14 @@ function saveSettings() {
         labelPayee: document.getElementById('settingLabelPayee').value.trim() || 'Acquittée',
         emailSubject: document.getElementById('settingEmailSubject').value.trim(),
         emailBody: document.getElementById('settingEmailBody').value.trim(),
+        emailSignature: document.getElementById('settingEmailSignature').value.trim(),
         backupFrequency: document.getElementById('settingBackupFrequency').value,
         backupPath: document.getElementById('settingBackupPath').value.trim(),
         smtpEmail: document.getElementById('settingSmtpEmail').value.trim(),
         smtpPassword: document.getElementById('settingSmtpPassword').value.trim(),
         smtpEnabled: document.getElementById('settingSmtpEnabled').checked,
         paiements,
+        markerLegend: current.markerLegend || DEFAULT_MARKER_LEGEND
     };
 
     // Validation email si SMTP activé
@@ -310,6 +322,97 @@ function removeTypeSeance(index) {
     DB.saveSettings(settings);
     renderTypeSeances(settings.typesSeances);
     showToast('Type de séance supprimé.', 'info');
+}
+
+// ===== LÉGENDE ANATOMIQUE =====
+function renderMarkerLegend(legend) {
+    const el = document.getElementById('markerLegendList');
+    if (!el) return;
+    if (!Array.isArray(legend) || legend.length === 0) {
+        el.innerHTML = '<div class="empty-state-sm">Aucun marqueur défini.</div>';
+        return;
+    }
+
+    el.innerHTML = legend.map((m, i) => `
+        <div class="type-seance-item">
+            <div class="type-seance-main">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:16px; height:16px; border-radius:50%; background:${m.color}; border:1px solid rgba(255,255,255,0.2);"></div>
+                    <div class="type-seance-info">${m.label}</div>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-sm btn-outline" onclick="editMarkerLegend(${i})" title="Modifier">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="removeMarkerLegend(${i})" title="Supprimer">🗑</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function addMarkerLegend() {
+    const label = document.getElementById('newMarkerLabel').value.trim();
+    const color = document.getElementById('newMarkerColor').value;
+    const editIndex = parseInt(document.getElementById('editMarkerIndex').value);
+    
+    if (!label) { showToast('Saisissez un nom de marqueur.', 'error'); return; }
+    
+    const settings = DB.getSettings();
+    if (!settings.markerLegend) {
+        settings.markerLegend = [...DEFAULT_MARKER_LEGEND];
+    }
+    
+    if (editIndex >= 0) {
+        settings.markerLegend[editIndex] = { label, color };
+        showToast('Marqueur modifié.', 'success');
+    } else {
+        settings.markerLegend.push({ label, color });
+        showToast('Marqueur ajouté.', 'success');
+    }
+    
+    DB.saveSettings(settings);
+    cancelMarkerEdit();
+    renderMarkerLegend(settings.markerLegend);
+}
+
+function editMarkerLegend(index) {
+    const settings = DB.getSettings();
+    const legend = settings.markerLegend || DEFAULT_MARKER_LEGEND;
+    
+    if (!Array.isArray(legend)) {
+        console.error("Marker legend is not an array:", legend);
+        return;
+    }
+
+    const m = legend[index];
+    if (!m) return;
+
+    document.getElementById('newMarkerLabel').value = m.label;
+    document.getElementById('newMarkerColor').value = m.color;
+    document.getElementById('editMarkerIndex').value = index;
+
+    document.getElementById('markerFormTitle').textContent = 'Modifier le marqueur';
+    document.getElementById('btnAddMarker').textContent = '💾 Enregistrer';
+    document.getElementById('btnCancelMarkerEdit').style.display = 'inline-block';
+}
+
+function cancelMarkerEdit() {
+    document.getElementById('newMarkerLabel').value = '';
+    document.getElementById('newMarkerColor').value = '#e05a5a';
+    document.getElementById('editMarkerIndex').value = '-1';
+
+    document.getElementById('markerFormTitle').textContent = 'Ajouter un type de marqueur';
+    document.getElementById('btnAddMarker').textContent = '➕ Ajouter';
+    document.getElementById('btnCancelMarkerEdit').style.display = 'none';
+}
+
+function removeMarkerLegend(index) {
+    const settings = DB.getSettings();
+    if (!settings.markerLegend) return;
+    
+    settings.markerLegend.splice(index, 1);
+    DB.saveSettings(settings);
+    renderMarkerLegend(settings.markerLegend);
+    showToast('Marqueur supprimé.', 'info');
 }
 
 // ===== BACKUP =====
@@ -694,6 +797,11 @@ window.addTypeSeance = addTypeSeance;
 window.editTypeSeance = editTypeSeance;
 window.cancelTypeEdit = cancelTypeEdit;
 window.removeTypeSeance = removeTypeSeance;
+window.renderMarkerLegend = renderMarkerLegend;
+window.addMarkerLegend = addMarkerLegend;
+window.editMarkerLegend = editMarkerLegend;
+window.cancelMarkerEdit = cancelMarkerEdit;
+window.removeMarkerLegend = removeMarkerLegend;
 window.triggerManualBackup = triggerManualBackup;
 window.checkBackupReminder = checkBackupReminder;
 window.importBackup = importBackup;

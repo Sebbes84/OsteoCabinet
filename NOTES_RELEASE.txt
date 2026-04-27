@@ -1,0 +1,156 @@
+# 🚀 RELEASE 1.0.11 — Anatomie, Attestations & Personnalisation
+
+Cette version majeure introduit une personnalisation poussée du schéma anatomique, la génération d'attestations de présence et améliore le suivi historique des patients.
+
+## 📄 Attestation de RDV
+- **Génération Express** : Créez une attestation de présence directement depuis une séance réalisée en un seul clic via le nouveau bouton **📄 Attestation**.
+- **Design Intelligent** : L'attestation réutilise votre template de facture (logo, styles) tout en masquant automatiquement les informations de facturation (tarifs, règlements, NSS).
+- **Envoi & PDF** : Téléchargez l'attestation en PDF ou envoyez-la par email (SMTP ou Gmail) avec un objet et un corps de message adaptés.
+
+## 🎨 Légende Anatomique Personnalisable
+- **Gestion Totale** : Créez, modifiez ou supprimez vos propres types de marqueurs dans les **Paramètres**.
+- **Styles par Défaut** : Retrouvez automatiquement vos 3 styles habituels (*Douleur, Tension, Traitement*) dès le premier lancement.
+- **Couleurs & Libellés** : Personnalisez chaque marqueur avec une couleur dédiée pour une lecture plus rapide de vos fiches.
+
+## 🩺 Historique Visuel Enrichi
+- **Synthèse Anatomique** : Le dossier patient affiche maintenant la superposition de TOUS les marqueurs de toutes ses séances pour une vision globale.
+- **Filtrage par Séance** : Cliquez sur une ligne dans l'historique des séances pour isoler et visualiser uniquement les zones traitées lors de cette consultation précise.
+- **Précision Temporelle** : Les marqueurs enregistrent désormais la date réelle de la séance (et non plus la date du jour) pour un suivi historique fidèle.
+
+- **Affinage & Stabilité** : 
+    - Correction d'une erreur critique `btnMail already declared` qui empêchait l'envoi d'emails.
+    - Unification de la **signature email** via un nouveau champ dédié dans les paramètres.
+    - Sécurisation de l'édition des légendes anatomiques et correction de leur affichage visuel.
+    - Résolution de conflits potentiels d'identifiants entre les factures et les attestations.
+    - Mise en place d'un système de versioning (`?v=1.0.11`) qui force votre navigateur à charger les derniers correctifs.
+
+---
+
+# 🚀 RELEASE 1.0.10 — Navigation & Sécurité
+
+Cette version améliore la fluidité de navigation entre l'aperçu et l'édition, et renforce la sécurité de l'édition manuelle des numéros de facture.
+
+## ⚡ Navigation Optimisée
+- **Bouton Édition Directe** : Nouveau bouton **"✏️ Editer la facture"** ajouté en bas à gauche de la fenêtre d'aperçu. Il permet de basculer instantanément en mode modification tout en fermant l'aperçu d'un seul clic.
+
+## 🔒 Mode Secret Intelligent
+- **Auto-verrouillage** : Le mode de modification manuelle du numéro de facture (triple-clic) se désactive désormais automatiquement dès que vous cliquez en dehors du champ.
+- **Notification de Feedback** : Une confirmation visuelle **"Mode secret désactivé"** s'affiche pour vous assurer que le numéro est bien reverrouillé.
+
+---
+
+# 🚀 RELEASE 1.0.9 — Personnalisation & Stabilité
+
+Cette mise à jour apporte une personnalisation accrue du dossier patient et de la fiche de séance, tout en corrigeant un problème critique de l'interface.
+
+## 👥 Dossier Patient Enrichi
+- **Suivi Professionnel** : Le champ "Mutuelle / Assurance" est remplacé par **"Situation professionnelle"** avec des suggestions rapides (Actif, Retraité, Sans emploi).
+- **Antécédents Détaillés** : Ajout de nouveaux champs spécifiques pour un bilan plus complet :
+    - Antécédents médicaux
+    - Allergie(s)
+    - Chirurgie(s)
+    - Digestif
+    - Sport
+    - Gynécologique
+
+## 🩺 Fiche de Séance Optimisée
+- **Multi-motifs** : Vous pouvez désormais saisir jusqu'à **deux motifs de consultation distincts** par séance pour un historique plus précis.
+- **Organisation** : Renommage du champ "Anamnèse" en "Motif 1" pour plus de clarté.
+
+## 🛠 Correctifs & Stabilité
+- **Sécurisation Autocomplete** : Résolution définitive du crash `TypeError: Cannot read properties of null (reading 'style')` qui pouvait survenir lors de la sélection rapide d'une suggestion.
+- **Fiabilité du DOM** : Refonte technique des interactions avec les éléments parents pour éviter tout conflit lors du re-rendu dynamique des formulaires.
+ 
+---
+ 
+# 🚀 RELEASE 1.0.8 — Confidentialité & Diagnostics SMTP
+
+Cette version renforce la sécurité de vos données sensibles et simplifie la configuration de l'envoi d'emails.
+
+## 🔒 Confidentialité du Chiffre d'Affaires
+- **Floutage Automatique** : Sur le tableau de bord, votre CA est désormais flouté par défaut pour préserver votre confidentialité. 
+- **Affichage au Clic** : Cliquez simplement sur le montant pour le révéler. Le flou se réactive automatiquement dès que vous quittez la page.
+
+## 🧪 Assistant SMTP & Logs
+- **Bouton de Test** : Un nouveau bouton 🧪 dans les **Paramètres** permet de tester instantanément votre configuration Gmail.
+- **Logs en Temps Réel** : Visualisez l'avancement technique de l'envoi (connexion, authentification, succès/échec) directement dans l'interface pour identifier rapidement tout problème de mot de passe ou de port.
+- **Validation d'Emails** : Vérification temps réel du format des adresses emails pour l'expéditeur (SMTP) et les patients (envoi de facture).
+
+## 🛠 Stabilité & Développement
+- **Correctifs ReferenceError** : Refonte de l'accès aux fonctions JS (`window.exports`) pour garantir que tous les boutons fonctionnent, quel que soit l'ordre de chargement des fichiers.
+- **Robustesse Encodage** : Renommage technique d'identifiants (ex: `btnPreviewFactureModal`) pour une compatibilité parfaite avec tous les navigateurs Windows.
+
+---
+
+# 🚀 RELEASE 1.0.7 — Suivi & Visibilité
+
+Cette mise à jour apporte une meilleure visibilité sur le suivi de vos factures et améliore considérablement le confort d'utilisation au quotidien.
+
+## 🧾 Suivi des Envois Emails
+- **Historique d'envoi** : Désormais, lorsqu'une facture est envoyée (automatiquement ou via Gmail), la date d'envoi est enregistrée.
+- **Indicateurs visuels** : Un badge "📧 Envoyée le..." apparaît dans la liste des factures, sur le Tableau de bord et dans le titre de l'aperçu pour identifier rapidement les documents transmis.
+
+## ⚡ Flux de Facturation Optimisé
+- **Persistance de la fenêtre** : Le bouton "Enregistrer" ne ferme plus la fenêtre de facturation, vous permettant de générer le PDF ou d'envoyer l'e-mail immédiatement après la sauvegarde.
+- **Bouton Aperçu Dynamique** : Un nouveau bouton "👁 Aperçu de la facture" apparaît dès que vos modifications sont enregistrées, garantissant que vous visualisez toujours la version à jour.
+- **Rapprochement Séances** : Ajout d'une colonne "Facture" dans l'onglet Séances pour voir d'un coup d'œil si une séance a été facturée et accéder directement au document.
+
+## 🛠 Stabilité & Database
+- **Migration Automatique** : La base de données s'adapte toute seule pour supporter le nouvel historique d'envoi sans aucune action de votre part.
+
+---
+
+# 🚀 RELEASE 1.0.6 — Automatisation & Stabilité
+
+Cette mise à jour majeure introduit l'envoi automatique des factures et renforce considérablement la fiabilité globale de l'application.
+
+## 📧 Envoi d'Emails Automatique (SMTP)
+- **Automatisation Totale** : Envoyez vos factures avec leur PDF joint directement depuis le logiciel. Plus besoin d'ouvrir votre boîte mail manuellement.
+- **Système "Smart Priority"** : L'application détecte et mémorise automatiquement le port de messagerie (465 ou 587) le plus performant sur votre réseau pour garantir l'envoi.
+- **Modèles Dynamiques** : Personnalisation de l'objet et du corps de l'email avec intégration automatique du nom du patient et du montant.
+- **Configuration Simplifiée** : Assistant de configuration Gmail intégré dans l'onglet Paramètres.
+
+> [!TIP]
+> **Conseil :** Pour activer l'envoi d'emails, rendez-vous dans les **Paramètres**, saisissez votre adresse Gmail et votre "Mot de passe d'application", puis cochez la case **ACTIVER**.
+
+## 🛠 Stabilité & Sécurité (Correctifs Sentry)
+- **Migration Automatique** : Votre base de données locale se met à jour toute seule pour accueillir les nouveaux champs sans aucune perte de données.
+- **Correction API** : Résolution d'un bug critique qui empêchait parfois la mise à jour des séances.
+- **Mode Hors-Ligne** : Détection et gestion des erreurs si la bibliothèque PDF n'est pas chargée (absence de connexion internet).
+- **Sécurité des Factures** : Amélioration de la génération des identifiants pour éviter tout risque de doublon.
+- **Garde-fous UI** : Ajout de contrôles de sécurité sur tous les formulaires pour éviter les crashs si des données sont incomplètes.
+
+## 💎 Améliorations de l'Interface
+- **Rendu "Premium"** : Nouveau design épuré pour les notes de mise à jour.
+- **Typographie** : Meilleure lisibilité des textes et alignement optimisé des listes.
+- **Fluidité** : Optimisation des temps de réponse lors de la sauvegarde des dossiers patients complexes.
+
+---
+
+# 🚀 RELEASE 1.0.5 — Nouveautés et Améliorations
+
+Cette version optimise la facturation et le tableau de bord pour une utilisation quotidienne plus fluide.
+
+## 📄 Facturation & PDF
+- **Génération PDF Native** : Téléchargez vos factures en un clic via le nouveau bouton 📄 PDF (plus besoin d'imprimante virtuelle).
+- **Rendu Pleine Page A4** : Correction automatique de l'échelle (Zoom auto) pour que vos factures occupent tout l'espace de la feuille, sans marges blanches.
+- **Haute Résolution** : Export net et précis (Scale x3) des textes et logos.
+
+## 🖥️ Dashboard & Navigation
+- **Historique Étendu** : Affichage jusqu'à 100 patients et factures avec barre de défilement interne.
+- **Boutons Intelligents** : Le bouton d'action du dashboard s'adapte ("Voir patients") pour une navigation plus fluide.
+- **Mode Sombre** : Meilleure lisibilité des menus de sélection.
+
+## 👥 Confort d'utilisation
+- **Sécurité anti-fermeture** : Les fenêtres ne se ferment plus par erreur en cliquant à côté (overlay).
+- **Flux Patient** : Le bouton "Nouvelle séance" n'apparaît que sur les dossiers enregistrés. La fiche patient reste ouverte après sauvegarde pour gagner du temps.
+
+---
+
+# 🚀 RELEASE 1.0.1 -> 1.0.4
+- Mises à jour régulières et corrections de bugs mineurs.
+
+---
+
+# 🚀 RELEASE 1.0.0
+- Version de base initiale : Gestion des patients, séances, planning et facturation classique.
